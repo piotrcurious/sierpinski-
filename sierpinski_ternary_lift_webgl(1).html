@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#071119">
+<title>Sierpiński — Ternary Lift</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#071119; --panel:rgba(9,22,32,.82); --line:rgba(150,201,210,.18);
+    --text:#e1efed; --muted:#8fa9ae; --cyan:#70e6d8; --amber:#f0b778;
+  }
+  * { box-sizing:border-box }
+  html,body { width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg) }
+  body {
+    color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    letter-spacing:.015em;
+    background:radial-gradient(ellipse at 47% 43%,rgba(22,72,83,.25),transparent 46%),
+      radial-gradient(ellipse at 84% 82%,rgba(38,44,79,.18),transparent 43%),
+      linear-gradient(145deg,#071119 0%,#091722 54%,#080f18 100%);
+  }
+  #gl { position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab }
+  #gl.dragging { cursor:grabbing }
+  .grain { position:absolute;inset:0;pointer-events:none;opacity:.09;mix-blend-mode:screen;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.83' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E") }
+  .hud { position:absolute;z-index:2;pointer-events:none }
+  .panel { background:linear-gradient(135deg,rgba(13,30,42,.9),rgba(7,18,28,.79));
+    border:1px solid var(--line);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px) }
+  .brand { top:22px;left:24px;padding:14px 17px 13px;min-width:270px }
+  .eyebrow { color:var(--cyan);font-size:9px;letter-spacing:.22em;text-transform:uppercase;opacity:.9 }
+  h1 { margin:7px 0 4px;font-size:18px;letter-spacing:.035em;font-weight:500 }
+  .subtitle { font-size:9px;color:var(--muted);letter-spacing:.08em }
+  .readout { top:22px;right:24px;padding:12px 16px 11px;min-width:168px;text-align:right }
+  .readout .label { color:var(--muted);font-size:9px;letter-spacing:.17em;text-transform:uppercase }
+  #depthValue { margin-top:5px;font-size:25px;color:var(--cyan);font-variant-numeric:tabular-nums;letter-spacing:.035em }
+  .readout .unit { color:var(--muted);font-size:9px;margin-top:2px }
+  .status { position:absolute;top:100px;right:25px;color:rgba(145,190,190,.7);font-size:9px;letter-spacing:.15em;text-align:right;pointer-events:none }
+  #statusDot { display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--cyan);margin:0 6px 1px 0;box-shadow:0 0 9px var(--cyan) }
+  .controls { left:24px;bottom:22px;padding:13px 15px 12px;width:min(402px,calc(100vw - 48px));pointer-events:auto }
+  .row { display:flex;align-items:center;gap:8px }
+  button,select { font:inherit;color:var(--text);border:1px solid rgba(145,190,199,.24);background:rgba(16,39,50,.8);border-radius:3px;height:31px }
+  button { padding:0 11px;cursor:pointer;font-size:9px;letter-spacing:.07em;transition:background .15s,border-color .15s }
+  button:hover { background:rgba(35,76,84,.8);border-color:rgba(112,230,216,.55) }
+  button:focus-visible,select:focus-visible,input:focus-visible { outline:1px solid var(--cyan);outline-offset:2px }
+  button.primary { background:var(--cyan);border-color:var(--cyan);color:#06191a;font-weight:700 }
+  button.primary:hover { background:#a1fff0 }
+  .spacer { flex:1 }
+  select { height:27px;padding:0 8px;font-size:10px }
+  .field { display:grid;grid-template-columns:112px 1fr 42px;align-items:center;gap:9px;margin-top:12px }
+  .field label { color:var(--muted);font-size:9px;letter-spacing:.12em;text-transform:uppercase }
+  input[type=range] { width:100%;height:3px;accent-color:var(--cyan);cursor:pointer }
+  .val { text-align:right;color:var(--amber);font-size:10px;font-variant-numeric:tabular-nums }
+  .hint { margin-top:10px;padding-top:9px;border-top:1px solid rgba(150,201,210,.12);color:#89a2a8;font-size:9px;line-height:1.6 }
+  .math { right:24px;bottom:22px;padding:13px 16px 12px;width:min(370px,calc(100vw - 48px)); }
+  .math-title { color:var(--muted);font-size:9px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:9px }
+  .formula { color:#d6e7e3;font-size:12px;line-height:1.7;white-space:nowrap }
+  .formula .z { color:var(--amber) }
+  .math-note { margin-top:7px;color:#8da6aa;font-size:9px;line-height:1.55 }
+  .corner { position:absolute;left:50%;bottom:25px;transform:translateX(-50%);color:rgba(148,178,181,.56);font-size:9px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;pointer-events:none }
+  #error { display:none;position:absolute;inset:0;z-index:5;padding:10vw;background:#071119;color:#ffb9a6;font-size:13px;line-height:1.7 }
+  @media(max-width:780px) {
+    .brand{top:11px;left:11px;min-width:0;padding:10px 12px} h1{font-size:15px}.subtitle{font-size:8px}
+    .readout{top:11px;right:11px;min-width:132px;padding:9px 11px}#depthValue{font-size:20px}
+    .status{top:84px;right:12px;font-size:8px}
+    .controls{left:11px;bottom:11px;width:min(390px,calc(100vw - 22px));padding:10px 11px}
+    .math{right:11px;bottom:11px;width:min(340px,calc(100vw - 22px));display:none}
+    .corner{display:none}
+  }
+  @media(max-width:520px) {
+    .brand{max-width:calc(100vw - 160px)}.subtitle{max-width:180px;white-space:normal;line-height:1.4}
+    .controls{width:calc(100vw - 22px)}.field{grid-template-columns:86px 1fr 38px;gap:6px}
+    button{padding:0 8px;font-size:8px}
+  }
+</style>
+</head>
+<body>
+<canvas id="gl" aria-label="Three-dimensional Sierpinski arrowhead curve with a self-similar ternary height lift"></canvas>
+<div class="grain"></div>
+<div class="hud brand panel">
+  <div class="eyebrow">Recursive geometry / 02</div>
+  <h1>Sierpiński <span style="color:var(--cyan)">↗</span> ternary lift</h1>
+  <div class="subtitle">THE ARROWHEAD PATH, EMBEDDED IN X · Y · Z</div>
+</div>
+<div class="hud readout panel">
+  <div class="label">Renormalized zoom</div>
+  <div id="depthValue">0.00×</div>
+  <div class="unit">recursive octaves · log₂ zoom</div>
+</div>
+<div class="status"><span id="statusDot"></span><span id="statusText">A-B RECURSION / HOLD</span></div>
+<div class="hud controls panel">
+  <div class="row">
+    <button id="autoBtn" class="primary">AUTO ZOOM</button>
+    <button id="stepBtn">+ 1 OCTAVE</button>
+    <button id="resetBtn">RESET</button>
+    <span class="spacer"></span>
+    <label for="order" style="color:var(--muted);font-size:9px;letter-spacing:.12em">ORDER</label>
+    <select id="order"><option>6</option><option>7</option><option selected>8</option><option>9</option><option>10</option></select>
+  </div>
+  <div class="field"><label for="zoom">Zoom depth</label><input id="zoom" type="range" min="0" max="24" step="0.01" value="0"><span class="val" id="zoomVal">0.00</span></div>
+  <div class="field"><label for="lift">Z amplitude</label><input id="lift" type="range" min="0" max="1.8" step="0.01" value="0.78"><span class="val" id="liftVal">0.78</span></div>
+  <div class="hint">Drag to orbit · wheel to zoom · Shift+wheel for finer control · Space toggles auto zoom. The path itself rises and falls in Z; no planar copies are stacked.</div>
+</div>
+<div class="hud math panel">
+  <div class="math-title">The lift / exact first-child law</div>
+  <div class="formula">A → B−A−B &nbsp; B → A+B+A</div>
+  <div class="formula"><span class="z">zₙ(t)</span> = h Σ<sub>k=0</sub><sup>n−1</sup> 2<sup>−k</sup> φ(3<sup>k</sup>t)</div>
+  <div class="formula">φ(0, ⅓, ⅔, 1) = (0, +1, −1, 0)</div>
+  <div class="formula" style="margin-top:5px;color:var(--cyan)">2 [ zₙ(u/3) − h·u ] = zₙ₋₁(u)</div>
+  <div class="math-note">The ternary height signal is continuous and self-affine. Each octave removes its first-branch Z baseline, doubles the remainder, then rebases onto the next A/B child.</div>
+</div>
+<div class="corner">XY = classical arrowhead substitution · Z = ternary scale history</div>
+<div id="error"></div>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('gl');
+  const errorBox = document.getElementById('error');
+  const gl = canvas.getContext('webgl2', {alpha:true, antialias:true, depth:true, premultipliedAlpha:false});
+  if (!gl) { errorBox.style.display='block'; errorBox.textContent='WebGL 2 is required for this standalone demo.'; return; }
+
+  const $ = id => document.getElementById(id);
+  const state = { depth:0, lift:0.78, order:8, auto:false, speed:0.16, yaw:0.55, pitch:0.78, radius:5.6,
+    kind:'A', cycle:-1, currentCenter:[0,0], childCenter:[0,0], lowChildCenter:[0,0], vertexCount:0, lowVertexCount:0, dt:0, lowDt:0, templates:null, gridCount:0 };
+  const SQRT3=Math.sqrt(3), directions=[[1,0],[0.5,SQRT3/2],[-0.5,SQRT3/2],[-1,0],[-0.5,-SQRT3/2],[0.5,-SQRT3/2]];
+
+  function compile(type, source) {
+    const sh=gl.createShader(type); gl.shaderSource(sh,source); gl.compileShader(sh);
+    if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)) { const msg=gl.getShaderInfoLog(sh); gl.deleteShader(sh); throw new Error(msg); }
+    return sh;
+  }
+  function program(vs,fs) {
+    const p=gl.createProgram(); gl.attachShader(p,compile(gl.VERTEX_SHADER,vs)); gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));
+    gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p;
+  }
+  const curveProgram=program(`#version 300 es
+    precision highp float;
+    layout(location=0) in vec3 a_pos;
+    layout(location=1) in vec3 a_dir;
+    layout(location=2) in float a_side;
+    layout(location=3) in float a_t;
+    uniform mat4 u_view; uniform mat4 u_proj;
+    uniform vec2 u_center; uniform vec2 u_anchor; uniform vec2 u_resolution;
+    uniform float u_phase; uniform float u_lift; uniform float u_fit; uniform float u_dt; uniform float u_width;
+    out float v_t; out float v_height;
+    void main(){
+      float s=exp2(u_phase);
+      vec2 origin=mix(u_center,u_anchor,u_phase);
+      vec3 p=vec3((a_pos.xy-origin)*s,(a_pos.z-3.0*u_phase*a_t)*u_lift*s)*u_fit;
+      vec3 d=vec3(a_dir.xy*s,(a_dir.z-3.0*u_phase*u_dt)*u_lift*s)*u_fit;
+      vec4 viewPos=u_view*vec4(p,1.0);
+      vec3 dirView=mat3(u_view)*d;
+      vec3 side=cross(dirView,vec3(0.0,0.0,1.0));
+      float sideLen=length(side);
+      side=sideLen>0.00001?side/sideLen:vec3(1.0,0.0,0.0);
+      vec4 clip=u_proj*viewPos;
+      clip.xy+=side.xy*a_side*(u_width*2.0/u_resolution)*clip.w;
+      gl_Position=clip; v_t=a_t; v_height=p.z;
+    }`, `#version 300 es
+    precision highp float;
+    uniform float u_alpha;
+    in float v_t; in float v_height;
+    out vec4 outColor;
+    void main(){
+      vec3 c=mix(vec3(0.22,0.88,0.80),vec3(1.00,0.63,0.34),smoothstep(0.04,0.98,v_t));
+      c=mix(c,vec3(0.48,0.68,1.00),smoothstep(-1.4,1.4,v_height)*0.17);
+      outColor=vec4(c,u_alpha);
+    }`);
+  const gridProgram=program(`#version 300 es
+    precision highp float;
+    layout(location=0) in vec3 a_pos; layout(location=1) in vec4 a_color;
+    uniform mat4 u_view; uniform mat4 u_proj; uniform float u_fit;
+    out vec4 v_color;
+    void main(){ gl_Position=u_proj*u_view*vec4(a_pos*u_fit,1.0); v_color=a_color; }`, `#version 300 es
+    precision highp float; in vec4 v_color; out vec4 outColor;
+    void main(){ outColor=v_color; }`);
+
+  const curveLoc={view:gl.getUniformLocation(curveProgram,'u_view'),proj:gl.getUniformLocation(curveProgram,'u_proj'),
+    center:gl.getUniformLocation(curveProgram,'u_center'),anchor:gl.getUniformLocation(curveProgram,'u_anchor'),
+    resolution:gl.getUniformLocation(curveProgram,'u_resolution'),phase:gl.getUniformLocation(curveProgram,'u_phase'),
+    lift:gl.getUniformLocation(curveProgram,'u_lift'),fit:gl.getUniformLocation(curveProgram,'u_fit'),
+    dt:gl.getUniformLocation(curveProgram,'u_dt'),width:gl.getUniformLocation(curveProgram,'u_width'),alpha:gl.getUniformLocation(curveProgram,'u_alpha')};
+  const gridLoc={view:gl.getUniformLocation(gridProgram,'u_view'),proj:gl.getUniformLocation(gridProgram,'u_proj'),fit:gl.getUniformLocation(gridProgram,'u_fit')};
+
+  function makePath(order) {
+    let word='A';
+    for(let n=0;n<order;n++) word=word.replace(/[AB]/g,c=>c==='A'?'B-A-B':'A+B+A');
+    const count=3**order;
+    const pts=new Float64Array((count+1)*2);
+    let x=0,y=0,heading=0,index=0;
+    for(let j=0;j<word.length;j++) {
+      const ch=word[j];
+      if(ch==='A'||ch==='B') {
+        x+=directions[heading][0]; y+=directions[heading][1]; index++;
+        pts[index*2]=x; pts[index*2+1]=y;
+      } else if(ch==='+') heading=(heading+1)%6;
+      else if(ch==='-') heading=(heading+5)%6;
+    }
+    if(index!==count) throw new Error('Curve generator count mismatch: '+index+' / '+count);
+    return {pts,count,scale:2**order,order};
+  }
+  function phi(x) {
+    const u=x-Math.floor(x);
+    if(u<1/3) return 3*u;
+    if(u<2/3) return 3-6*u;
+    return 3*u-3;
+  }
+  function makeLift(count,order) {
+    const z=new Float32Array(count+1);
+    const freq=new Float64Array(order),amp=new Float64Array(order);
+    let f=1,a=1;
+    for(let k=0;k<order;k++){freq[k]=f;amp[k]=a;f*=3;a*=0.5;}
+    for(let i=0;i<=count;i++) {
+      const t=i/count; let v=0;
+      for(let k=0;k<order;k++) v+=amp[k]*phi(freq[k]*t);
+      z[i]=v;
+    }
+    return z;
+  }
+  function pathCenter(path, kind) {
+    const {pts,count,scale}=path;
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    const sign=kind==='A'?1:-1;
+    for(let i=0;i<=count;i++) {
+      const x=pts[i*2]/scale,y=sign*pts[i*2+1]/scale;
+      if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+    }
+    return [(minX+maxX)*0.5,(minY+maxY)*0.5];
+  }
+  function buildMesh(path,liftValues,kind) {
+    const {pts,count,scale}=path, sign=kind==='A'?1:-1;
+    const data=new Float32Array(count*6*8); let o=0;
+    for(let i=0;i<count;i++) {
+      const x0=pts[i*2]/scale, y0=sign*pts[i*2+1]/scale, z0=liftValues[i];
+      const x1=pts[(i+1)*2]/scale, y1=sign*pts[(i+1)*2+1]/scale, z1=liftValues[i+1];
+      const dx=x1-x0,dy=y1-y0,dz=z1-z0, t0=i/count,t1=(i+1)/count;
+      const put=(x,y,z,t,side)=>{data[o++]=x;data[o++]=y;data[o++]=z;data[o++]=dx;data[o++]=dy;data[o++]=dz;data[o++]=side;data[o++]=t;};
+      put(x0,y0,z0,t0,-1);put(x0,y0,z0,t0,1);put(x1,y1,z1,t1,-1);
+      put(x0,y0,z0,t0,1);put(x1,y1,z1,t1,1);put(x1,y1,z1,t1,-1);
+    }
+    return data;
+  }
+  function makeGrid() {
+    const d=[];
+    const add=(a,b,c)=>{d.push(...a,...c,...b,...c);};
+    const muted=[0.17,0.42,0.49,0.18], axis=[0.27,0.61,0.65,0.36], zaxis=[0.92,0.62,0.34,0.55];
+    for(let i=-5;i<=5;i++) {
+      const v=i*0.2,col=i===0?axis:muted;
+      add([-1.15,v,0],[1.15,v,0],col); add([v,-1.15,0],[v,1.15,0],col);
+    }
+    add([0,0,-1.55],[0,0,1.55],zaxis);
+    return new Float32Array(d);
+  }
+
+  function makeCurveBinding() {
+    const vao=gl.createVertexArray(),buffer=gl.createBuffer(),stride=8*4;
+    gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,stride,0);
+    gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,stride,3*4);
+    gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,1,gl.FLOAT,false,stride,6*4);
+    gl.enableVertexAttribArray(3);gl.vertexAttribPointer(3,1,gl.FLOAT,false,stride,7*4);
+    gl.bindVertexArray(null);
+    return {vao,buffer};
+  }
+  const curveBinding=makeCurveBinding(),lowBinding=makeCurveBinding();
+  const curveVAO=curveBinding.vao,curveBuffer=curveBinding.buffer;
+  const lowVAO=lowBinding.vao,lowBuffer=lowBinding.buffer;
+
+  const gridVAO=gl.createVertexArray(),gridBuffer=gl.createBuffer();
+  const gridData=makeGrid();state.gridCount=gridData.length/7;
+  gl.bindVertexArray(gridVAO);gl.bindBuffer(gl.ARRAY_BUFFER,gridBuffer);gl.bufferData(gl.ARRAY_BUFFER,gridData,gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,7*4,0);
+  gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.FLOAT,false,7*4,3*4);
+  gl.bindVertexArray(null);
+
+  function prepareOrder(order) {
+    const path=makePath(order),z=makeLift(path.count,order);
+    const pathChild=makePath(order-1),zChild=makeLift(pathChild.count,order-1);
+    const pathGrandchild=makePath(order-2);
+    state.templates={A:buildMesh(path,z,'A'),B:buildMesh(path,z,'B'),
+      lowA:buildMesh(pathChild,zChild,'A'),lowB:buildMesh(pathChild,zChild,'B'),
+      centerA:pathCenter(path,'A'),centerB:pathCenter(path,'B'),
+      childCenterA:pathCenter(pathChild,'A'),childCenterB:pathCenter(pathChild,'B'),
+      grandCenterA:pathCenter(pathGrandchild,'A'),grandCenterB:pathCenter(pathGrandchild,'B'),
+      count:path.count,lowCount:pathChild.count};
+    state.order=order;state.cycle=-1;setCycle(Math.floor(state.depth));
+  }
+  function setCycle(cycle) {
+    const kind=(cycle%2===0)?'A':'B';
+    const opposite=kind==='A'?'B':'A';
+    const t=state.templates;
+    const currentCenter=cycle===0 ? t['center'+kind] : t['childCenter'+kind];
+    const childCenter=t['childCenter'+opposite];
+    const lowChildCenter=t['grandCenter'+opposite];
+    gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,t[kind],gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,lowBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,t['low'+kind],gl.DYNAMIC_DRAW);
+    state.kind=kind;state.cycle=cycle;state.currentCenter=currentCenter.slice();
+    state.childCenter=childCenter.slice();state.lowChildCenter=lowChildCenter.slice();
+    state.vertexCount=t.count*6;state.lowVertexCount=t.lowCount*6;
+    state.dt=1/t.count;state.lowDt=1/t.lowCount;
+    $('statusText').textContent=kind+' → '+opposite+' / '+(state.auto?'AUTO':'HOLD');
+  }
+
+  function perspective(fovy,aspect,near,far) {
+    const f=1/Math.tan(fovy/2),nf=1/(near-far);
+    return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]);
+  }
+  function lookAt(eye,target,up) {
+    let zx=eye[0]-target[0],zy=eye[1]-target[1],zz=eye[2]-target[2];
+    let l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;
+    let xx=up[1]*zz-up[2]*zy,xy=up[2]*zx-up[0]*zz,xz=up[0]*zy-up[1]*zx;
+    l=Math.hypot(xx,xy,xz)||1;xx/=l;xy/=l;xz/=l;
+    const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+    return new Float32Array([xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0,
+      -(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1]);
+  }
+  function resize() {
+    const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));
+    if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}
+  }
+  function syncControls() {
+    $('depthValue').textContent=state.depth.toFixed(2);
+    $('zoomVal').textContent=state.depth.toFixed(2);
+    $('zoom').value=String(Math.max(0,Math.min(24,state.depth)));
+    $('lift').value=String(state.lift);$('liftVal').textContent=state.lift.toFixed(2);
+    $('autoBtn').textContent=state.auto?'PAUSE ZOOM':'AUTO ZOOM';
+    $('autoBtn').classList.toggle('primary',state.auto);
+    $('statusText').textContent=state.kind+' → '+(state.kind==='A'?'B':'A')+' / '+(state.auto?'AUTO':'HOLD');
+    $('statusDot').style.opacity=state.auto?'1':'.48';
+  }
+  $('autoBtn').addEventListener('click',()=>{state.auto=!state.auto;syncControls();});
+  $('stepBtn').addEventListener('click',()=>{state.depth+=1;syncControls();});
+  $('resetBtn').addEventListener('click',()=>{state.depth=0;state.auto=false;state.yaw=.55;state.pitch=.78;state.radius=5.6;syncControls();});
+  $('zoom').addEventListener('input',e=>{state.depth=Number(e.target.value);syncControls();});
+  $('lift').addEventListener('input',e=>{state.lift=Number(e.target.value);syncControls();});
+  $('order').addEventListener('change',e=>{prepareOrder(Number(e.target.value));syncControls();});
+  window.addEventListener('keydown',e=>{
+    if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();state.auto=!state.auto;syncControls();}
+    if(e.key==='+'||e.key==='='){state.depth+=0.25;syncControls();}
+    if(e.key==='-'||e.key==='_'){state.depth=Math.max(0,state.depth-0.25);syncControls();}
+  });
+  let drag=null;
+  canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');});
+  canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;state.yaw+=dx*.007;state.pitch=Math.max(.08,Math.min(1.48,state.pitch+dy*.006));});
+  const endDrag=()=>{drag=null;canvas.classList.remove('dragging');};
+  canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('lostpointercapture',endDrag);
+  canvas.addEventListener('wheel',e=>{e.preventDefault();const increment=e.shiftKey?.04:.18;state.depth=Math.max(0,Math.min(1e6,state.depth+(e.deltaY<0?increment:-increment)));syncControls();},{passive:false});
+
+  function drawCurve(vao,count,dtForMesh,anchor,weight) {
+    if(weight<=0.001)return;
+    gl.uniform2f(curveLoc.anchor,anchor[0]*.5,anchor[1]*.5);
+    gl.uniform1f(curveLoc.dt,dtForMesh);
+    gl.bindVertexArray(vao);
+    gl.uniform1f(curveLoc.width,6.5);gl.uniform1f(curveLoc.alpha,.13*weight);gl.drawArrays(gl.TRIANGLES,0,count);
+    gl.uniform1f(curveLoc.width,1.35);gl.uniform1f(curveLoc.alpha,.9*weight);gl.drawArrays(gl.TRIANGLES,0,count);
+  }
+
+  function render(now) {
+    resize();
+    if(!render.last)render.last=now;
+    const dt=Math.min(.05,(now-render.last)/1000);render.last=now;
+    if(state.auto){state.depth=Math.min(1e6,state.depth+dt*state.speed);}
+    const cycle=Math.floor(state.depth);
+    if(cycle!==state.cycle)setCycle(cycle);
+    const phase=state.depth-cycle;
+    const aspect=canvas.width/Math.max(1,canvas.height);
+    const proj=perspective(Math.PI/4,aspect,.04,100);
+    const cp=Math.cos(state.pitch),sp=Math.sin(state.pitch),r=state.radius;
+    const eye=[r*cp*Math.sin(state.yaw),-r*cp*Math.cos(state.yaw),r*sp];
+    const view=lookAt(eye,[0,0,0],[0,0,1]);
+    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.depthMask(false);
+    gl.useProgram(gridProgram);gl.uniformMatrix4fv(gridLoc.view,false,view);gl.uniformMatrix4fv(gridLoc.proj,false,proj);gl.uniform1f(gridLoc.fit,1.55);
+    gl.bindVertexArray(gridVAO);gl.drawArrays(gl.LINES,0,state.gridCount);
+
+    gl.useProgram(curveProgram);
+    gl.uniformMatrix4fv(curveLoc.view,false,view);gl.uniformMatrix4fv(curveLoc.proj,false,proj);
+    gl.uniform2f(curveLoc.center,state.currentCenter[0],state.currentCenter[1]);
+    gl.uniform2f(curveLoc.resolution,canvas.width,canvas.height);
+    gl.uniform1f(curveLoc.phase,phase);gl.uniform1f(curveLoc.lift,state.lift);
+    gl.uniform1f(curveLoc.fit,1.55);
+    if(cycle>0 && phase<.14) {
+      const q=Math.max(0,Math.min(1,phase/.14)),blend=q*q*(3-2*q);
+      drawCurve(lowVAO,state.lowVertexCount,state.lowDt,state.lowChildCenter,1-blend);
+      drawCurve(curveVAO,state.vertexCount,state.dt,state.childCenter,blend);
+    } else {
+      drawCurve(curveVAO,state.vertexCount,state.dt,state.childCenter,1);
+    }
+    gl.bindVertexArray(null);gl.depthMask(true);
+    if(state.auto)syncControls();
+    requestAnimationFrame(render);
+  }
+  try { prepareOrder(state.order);syncControls();requestAnimationFrame(render); }
+  catch(err){errorBox.style.display='block';errorBox.textContent='Unable to initialize the curve: '+err.message;console.error(err);}
+})();
+</script>
+</body>
+</html>
