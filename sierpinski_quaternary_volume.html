@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sierpiński Quaternary Volume — Recursive 3D Abstraction</title>
+<style>
+:root{color-scheme:dark;--bg:#07111a;--panel:#0d1b27;--panel2:#102432;--line:#244052;--text:#e4edf2;--muted:#91a8b8;--cyan:#6ce0e7;--amber:#ffbd75;--violet:#b5a1ff;--green:#8bd9a7}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+#app{height:100%;display:grid;grid-template-columns:340px minmax(0,1fr);gap:12px;padding:12px;min-height:0}
+aside{min-height:0;overflow:auto;background:linear-gradient(180deg,#0d1b27,#091722);border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:13px}
+h1{font-size:19px;line-height:1.2;margin:0;letter-spacing:.01em}h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 7px}
+p{margin:0;color:#c4d2dc}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #2a5b65;background:#0f3039;color:#a9f3ed;border-radius:99px;padding:4px 9px;font:11px ui-monospace,monospace;letter-spacing:.06em}
+.panel{background:#0a1721;border:1px solid #203748;border-radius:10px;padding:11px}.sourceWrap{display:grid;grid-template-columns:1fr;gap:8px}canvas#source2d{width:100%;height:180px;background:#06101a;border:1px solid #1c3443;border-radius:7px;display:block}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.metric{background:#091722;border:1px solid #1e3545;border-radius:8px;padding:8px}.metric strong{display:block;font:18px ui-monospace,monospace;color:var(--cyan)}.metric span{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.controls{display:grid;gap:10px}.control{display:grid;gap:5px}.control label{font-size:12px;color:#c5d4de}.control select,.control button{background:#102432;color:var(--text);border:1px solid #315064;border-radius:7px;padding:8px 10px;font:inherit}.control select{width:100%}.buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.buttons button{background:#102432;color:var(--text);border:1px solid #315064;border-radius:7px;padding:8px 4px;font:12px ui-monospace,monospace}.buttons button.active{background:#17434a;border-color:#58bdc7;color:#c9ffff}.actionRow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.actionRow button{background:#122a38;border:1px solid #36596a;border-radius:7px;padding:9px 5px;color:var(--text);font:11px ui-monospace,monospace}.actionRow button.primary{background:#16414a;border-color:#49aeb8;color:#d4ffff}.actionRow button:disabled{opacity:.4}
+.check{display:flex;gap:8px;align-items:center;color:#c8d6df;font-size:12px}.check input{accent-color:#55cbd5}
+#status{border-left:2px solid var(--green);padding:5px 8px;color:#b4c7d2;font:11px/1.45 ui-monospace,monospace;white-space:pre-wrap}
+#stage{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}.topbar .left{display:grid;gap:2px}.topbar strong{font-size:14px}.topbar span{font-size:11px;color:var(--muted)}.depth{font:12px ui-monospace,monospace;color:var(--cyan);text-align:right;overflow-wrap:anywhere;max-width:45%}
+#viewWrap{min-height:0;position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#102939 0%,#081722 55%,#06111a 100%)}
+#gl{width:100%;height:100%;display:block;touch-action:none}#glError{display:none;position:absolute;inset:0;place-items:center;text-align:center;padding:30px;color:#ffc6a0;background:#160d0d;font:13px ui-monospace,monospace;white-space:pre-wrap}
+.overlay{position:absolute;pointer-events:none;font:11px ui-monospace,monospace;color:#9db3c0;background:#08141dbb;border:1px solid #254153;border-radius:7px;padding:6px 8px}.tl{top:12px;left:12px}.tr{top:12px;right:12px;text-align:right}.bl{bottom:12px;left:12px}.br{bottom:12px;right:12px;text-align:right}
+.footer{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--muted);font-size:11px;padding:0 3px}.key{font:10px ui-monospace,monospace;border:1px solid #345064;border-radius:4px;padding:2px 5px;color:#d0e1e9}
+.formula{font:12px/1.5 ui-monospace,monospace;color:#c6d9e4;background:#07131c;border:1px solid #203747;border-radius:8px;padding:9px;overflow-wrap:anywhere}.good{color:var(--green)}.warn{color:var(--amber)}
+@media(max-width:850px){#app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);padding:8px;gap:8px}aside{max-height:45vh;padding:11px;gap:9px}#stage{grid-row:2}.sourceWrap{grid-template-columns:160px 1fr;align-items:center}canvas#source2d{height:112px}.topbar{padding:8px 10px}.footer{font-size:10px}}
+@media(max-width:520px){aside{max-height:43vh}.sourceWrap{grid-template-columns:1fr}canvas#source2d{height:90px}.metrics{grid-template-columns:repeat(4,1fr)}.metric strong{font-size:14px}.metric span{font-size:8px}.actionRow button{font-size:10px;padding:7px 3px}}
+</style>
+</head>
+<body>
+<div id="app">
+<aside>
+  <div style="display:grid;gap:7px">
+    <div class="pill">NOVEL 4-ARY / 3D ABSTRACTION</div>
+    <h1>Sierpiński Quaternary Volume</h1>
+    <p class="small">A new graph-directed 3D curve derived from the square Sierpiński curve’s four-way recursion. The planar coordinates are not lifted; the four recursive branches become adaptive prism maps.</p>
+  </div>
+  <section class="panel sourceWrap">
+    <div><h2>Planar source</h2><canvas id="source2d" width="620" height="360"></canvas></div>
+    <p class="small">Closed square Sierpiński source from its L-system. The 3D construction keeps the four X-descendant order and endpoint-state logic; the old planar connector strokes become shared-face junctions.</p>
+  </section>
+  <section class="metrics">
+    <div class="metric"><strong id="depthMetric">0</strong><span>global zoom level</span></div>
+    <div class="metric"><strong id="cellMetric">256</strong><span>local cells</span></div>
+    <div class="metric"><strong id="gapMetric">0</strong><span>max join gap</span></div>
+    <div class="metric"><strong id="aspectMetric">2.00</strong><span>max cell aspect</span></div>
+  </section>
+  <section class="controls panel">
+    <h2>Recursive detail</h2>
+    <div class="control"><label for="detail">Local refinement (four-way levels)</label><select id="detail"><option value="4" selected>Order 4 · 256 prisms</option><option value="8">Order 8 · 65,536 prisms</option></select></div>
+    <label class="check"><input id="showCells" type="checkbox" checked> Show prism boundaries</label>
+    <label class="check"><input id="showPath" type="checkbox" checked> Show connected traversal</label>
+    <div class="small">The four-step planner keeps relative axis scales bounded. Higher order generates new recursive addresses; it does not magnify a fixed point cloud.</div>
+  </section>
+  <section class="controls panel">
+    <h2>Enter a child prism</h2>
+    <div class="buttons" id="childButtons">
+      <button data-child="0" class="active">1 · 0</button><button data-child="1">2 · 1</button><button data-child="2">3 · 2</button><button data-child="3">4 · 3</button>
+    </div>
+    <div class="actionRow">
+      <button class="primary" id="enter">ENTER CHILD</button><button id="up">PARENT</button><button id="reset">RESET</button>
+    </div>
+    <div class="actionRow">
+      <button id="auto">AUTO DESCENT</button><button id="rotate">AUTO ROTATE</button><button id="validate">VERIFY CELLS</button>
+    </div>
+    <p class="small">Scroll down to enter the selected child; scroll up or press Backspace to return. Keys <span class="key">1</span>–<span class="key">4</span> select a child, <span class="key">Enter</span> descends.</p>
+  </section>
+  <section class="panel" style="display:grid;gap:8px">
+    <h2>Why this is volumetric</h2>
+    <div class="formula">At each level: 4 child prisms, each with volume 1/4 of its parent. Two axes halve; the held axis is chosen from the entry/exit state.</div>
+    <p class="small">Two axes are bisected; the third is retained. Which axis stays whole is selected from the current entry/exit corner pair. The four cells follow the square curve’s 2×2 cycle; their subcurves meet at shared-face junction corners.</p>
+    <div class="formula">4⁴ = 256 prisms · volume per prism = 1/256</div>
+    <div class="formula">sideᵢ(n) = 2<sup>−(n−uᵢ(n))</sup> · max(uᵢ) − min(uᵢ) ≤ 2 at 4-level boundaries</div>
+    <p class="small">A minimax finite-state planner chooses the three junction corners and the held axis. At every four-level boundary, the counts of uncut axes differ by at most two. Since each axis is therefore cut at a positive asymptotic rate, the largest nested prism diameter tends to zero. The partitions remain exact covers of the cube, so their limit is a continuous curve onto the entire volume.</p>
+    <p class="small warn">This is a new quaternary, graph-directed Peano construction—not a coordinate embedding of the original 2D drawing. Its recursive branching and endpoint order are inherited; its spatial contraction maps are newly derived.</p>
+  </section>
+  <div id="status">Initializing recursive state system…</div>
+</aside>
+<section id="stage">
+  <div class="topbar">
+    <div class="left"><strong>Connected path through a nested volume partition</strong><span>Drag to orbit · wheel to enter a recursive child · Shift+wheel adjusts camera distance</span></div>
+    <div class="depth" id="address">ADDRESS · ε</div>
+  </div>
+  <div id="viewWrap">
+    <canvas id="gl"></canvas>
+    <div id="glError"></div>
+    <div class="overlay tl" id="modeLabel">4-ARY VOLUME / ORDER 4</div>
+    <div class="overlay tr" id="shapeLabel">CELL ASPECT · 1 : 1 : 1</div>
+    <div class="overlay bl" id="proofLabel">256 CELLS · CONNECTED PATH</div>
+    <div class="overlay br">ADAPTIVE PRISM RECURSION<br>NO POINTWISE Z</div>
+  </div>
+  <div class="footer"><span>Recursive child address is the zoom coordinate; camera zoom is independent.</span><span id="fpsLabel">WEBGL2 · SELF-CONTAINED</span></div>
+</section>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const sourceCanvas=$('source2d'),sourceCtx=sourceCanvas.getContext('2d');
+const sourceAxiom='F+XF+F+XF',sourceProduction='XF-F+F-XF+F+XF-F+F-X',turtleDirs=[[1,0],[0,1],[-1,0],[0,-1]];
+function countX(n){return n<=0?0:8+4*countX(n-1)}
+function makeSource(order=4){const N=4+2*countX(order),raw=new Float64Array((N+1)*2);let p=0,x=0,y=0,d=0;const put=()=>{raw[p++]=x+y;raw[p++]=y-x};const F=()=>{x+=turtleDirs[d][0];y+=turtleDirs[d][1];put()};function X(k){if(k<=0)return;for(const ch of sourceProduction){if(ch==='X')X(k-1);else if(ch==='F')F();else if(ch==='+')d=(d+1)&3;else if(ch==='-')d=(d+3)&3}}put();for(const ch of sourceAxiom){if(ch==='X')X(order);else if(ch==='F')F();else if(ch==='+')d=(d+1)&3;else if(ch==='-')d=(d+3)&3}let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(let i=0;i<=N;i++){minX=Math.min(minX,raw[2*i]);maxX=Math.max(maxX,raw[2*i]);minY=Math.min(minY,raw[2*i+1]);maxY=Math.max(maxY,raw[2*i+1])}const sx=maxX-minX,sy=maxY-minY;for(let i=0;i<=N;i++){raw[2*i]=(raw[2*i]-minX)/sx;raw[2*i+1]=(raw[2*i+1]-minY)/sy}return{points:raw,segments:N}}
+function drawSource(){const S=makeSource(4),ctx=sourceCtx,w=sourceCanvas.width,h=sourceCanvas.height,p=S.points,pad=18,scale=Math.min(w-2*pad,h-2*pad);ctx.clearRect(0,0,w,h);ctx.fillStyle='#06101a';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#244050';ctx.lineWidth=1;ctx.strokeRect(pad,pad,scale,scale);ctx.beginPath();for(let i=0;i<=S.segments;i++){const x=pad+p[2*i]*scale,y=pad+(1-p[2*i+1])*scale;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.strokeStyle='#68dce5';ctx.lineWidth=1.25;ctx.stroke();ctx.fillStyle='#ffbd75';ctx.beginPath();ctx.arc(pad+p[0]*scale,pad+(1-p[1])*scale,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#7894a6';ctx.font='12px ui-monospace,monospace';ctx.fillText('S₄(t) · '+S.segments.toLocaleString()+' segments',pad+3,h-4)}
+drawSource();
+
+// Endpoint-state and four-prism transition system.
+const AX=[0,1,2],cubeBits=n=>[n&1,(n>>1)&1,(n>>2)&1],cornerCode=b=>b[0]|(b[1]<<1)|(b[2]<<2),ham=(a,b)=>{let x=a^b;x=(x&1)+((x>>1)&1)+((x>>2)&1);return x};
+function normalizeCounts(c){const m=Math.min(c[0],c[1],c[2]);return[c[0]-m,c[1]-m,c[2]-m]}
+function allowedAxes(e,x){const d=[];for(let a=0;a<3;a++)if(((e^x)>>a)&1)d.push(a);if(d.length===1)return AX.filter(a=>a!==d[0]);if(d.length===2)return d;return[]}
+const cycle=[[0,0],[1,0],[1,1],[0,1]];
+function cellPath(start,end){let si=cycle.findIndex(p=>p[0]===start[0]&&p[1]===start[1]),target=cycle.findIndex(p=>p[0]===end[0]&&p[1]===end[1]);if(si<0||target<0)return null;for(const step of [1,-1]){const out=[];for(let k=0;k<4;k++)out.push(cycle[(si+k*step+8)%4]);if(out[3][0]===end[0]&&out[3][1]===end[1])return out}return null}
+function buildTransition(e,x,c,code){const eb=cubeBits(e),xb=cubeBits(x),sp=AX.filter(a=>a!==c),seq=cellPath([eb[sp[0]],eb[sp[1]]],[xb[sp[0]],xb[sp[1]]]);if(!seq)return null;const js=[];for(let j=0;j<3;j++){const u=seq[j],v=seq[j+1],m=u[0]!==v[0]?0:1,n=1-m,r=(code>>(2*j))&1,q=(code>>(2*j+1))&1,before=[0,0,0],after=[0,0,0];before[sp[m]]=1-u[m];after[sp[m]]=1-v[m];before[sp[n]]=r;after[sp[n]]=r;before[c]=q;after[c]=q;js.push({before:cornerCode(before),after:cornerCode(after)})}const children=[];for(let i=0;i<4;i++){const ce=i===0?e:js[i-1].after,cx=i===3?x:js[i].before,h=ham(ce,cx);if(h!==1&&h!==2)return null;children.push({e:ce,x:cx,cell:seq[i]})}return{cells:seq,children,code}}
+const actionCache=new Map();
+function getActions(e,x,c){const key=e*24+x*3+c;if(actionCache.has(key))return actionCache.get(key);const unique=new Map();for(let code=0;code<64;code++){const a=buildTransition(e,x,c,code);if(!a)continue;const sig=a.children.map(ch=>ch.e*8+ch.x).join(',');if(!unique.has(sig))unique.set(sig,a)}const out=[...unique.values()];actionCache.set(key,out);return out}
+function makeStateList(){const s=[];for(let e=0;e<8;e++)for(let x=0;x<8;x++){const h=ham(e,x);if(h===1||h===2)s.push([e,x])}return s}
+const states=makeStateList();
+for(const [e,x] of states)for(const c of allowedAxes(e,x))getActions(e,x,c);
+const costCache=new Map(),planCache=new Map();
+function countsKey(c){const n=normalizeCounts(c);return n.join(',')}
+function cost(e,x,cnt,depth){const n=normalizeCounts(cnt),key=e+','+x+','+n.join(',')+','+depth;if(costCache.has(key))return costCache.get(key);if(depth===0){const v=Math.max(...n)-Math.min(...n);costCache.set(key,v);return v}let best=Infinity;for(const c of allowedAxes(e,x)){const nc=n.slice();nc[c]++;const next=normalizeCounts(nc);for(const a of getActions(e,x,c)){let worst=0;for(const child of a.children){const v=cost(child.e,child.x,next,depth-1);if(v>worst)worst=v;if(worst>=best)break}if(worst<best)best=worst}}costCache.set(key,best);return best}
+function buildPlan(e,x,cnt,depth){if(depth===0)return null;const n=normalizeCounts(cnt),key=e+','+x+','+n.join(',')+','+depth;if(planCache.has(key))return planCache.get(key);const target=cost(e,x,n,depth);let answer=null;for(const c of allowedAxes(e,x)){const nc=n.slice();nc[c]++;const next=normalizeCounts(nc);for(const a of getActions(e,x,c)){let worst=0;for(const child of a.children){const v=cost(child.e,child.x,next,depth-1);if(v>worst)worst=v;if(worst>target)break}if(worst===target){const sub=depth>1?a.children.map(ch=>buildPlan(ch.e,ch.x,next,depth-1)):[];answer={axis:c,cells:a.cells,children:a.children,sub,choice:a.code};break}}if(answer)break}if(!answer)throw new Error('No balanced four-step plan for state '+e+'→'+x+' / '+n);planCache.set(key,answer);return answer}
+const initial={e:0,x:1,counts:[0,0,0],address:'',plan:null,planDepth:0};let frame={...initial},history=[],selectedChild=0,localOrder=4,geometry=null,auto=false,autoRotate=false,autoLast=0,autoChild=0;
+function childBox(box,c,cell){const lo=box[0].slice(),hi=box[1].slice(),sp=AX.filter(a=>a!==c);for(let k=0;k<2;k++){const ax=sp[k],mid=(lo[ax]+hi[ax])*.5;if(cell[k]===0)hi[ax]=mid;else lo[ax]=mid}return[lo,hi]}
+function physical(bits,box){const b=cubeBits(bits);return[box[0][0]+b[0]*(box[1][0]-box[0][0]),box[0][1]+b[1]*(box[1][1]-box[0][1]),box[0][2]+b[2]*(box[1][2]-box[0][2])]}
+function generateLocal(start,order){
+ const path=[],boxes=[];let maxGap=0,first=true;
+ function emit(e,x,box){
+  const a=physical(e,box),b=physical(x,box);
+  if(first){path.push(...a);first=false}
+  else{const k=path.length-3,gap=Math.hypot(path[k]-a[0],path[k+1]-a[1],path[k+2]-a[2]);maxGap=Math.max(maxGap,gap);if(gap>1e-7)throw new Error('Non-contiguous child join '+gap)}
+  path.push(...b);boxes.push([...box[0],...box[1]]);
+ }
+ function genNode(e,x,box,cnt,remaining,forcedPlan=null,forcedDepth=0){
+  if(remaining===0){emit(e,x,box);return}
+  let pl,block;
+  if(forcedPlan&&forcedDepth>0){pl=forcedPlan;block=Math.min(forcedDepth,remaining)}
+  else{pl=buildPlan(e,x,cnt,4);block=Math.min(4,remaining)}
+  expand(e,x,box,cnt,remaining,block,pl);
+ }
+ function expand(e,x,box,cnt,remaining,planDepth,pl){
+  if(planDepth===0){if(remaining===0)emit(e,x,box);else genNode(e,x,box,cnt,remaining);return}
+  const axis=pl.axis,nc=cnt.slice();nc[axis]++;const next=normalizeCounts(nc);
+  for(let i=0;i<4;i++){
+   const ch=pl.children[i],b=childBox(box,axis,pl.cells[i]),rem=remaining-1;
+   if(planDepth>1)expand(ch.e,ch.x,b,next,rem,planDepth-1,pl.sub[i]);
+   else if(rem>0)genNode(ch.e,ch.x,b,next,rem);
+   else emit(ch.e,ch.x,b);
+  }
+ }
+ genNode(start.e,start.x,[[0,0,0],[1,1,1]],start.counts,order,start.plan||null,start.planDepth||0);
+ const pts=new Float32Array(path),bx=new Float32Array(boxes.flat());let maxAspect=1,totalVolume=0;
+ for(let i=0;i<boxes.length;i++){const b=boxes[i],d=[b[3]-b[0],b[4]-b[1],b[5]-b[2]],mn=Math.min(...d),mx=Math.max(...d);maxAspect=Math.max(maxAspect,mx/mn);totalVolume+=d[0]*d[1]*d[2]}
+ return{points:pts,boxes:bx,segments:boxes.length,maxGap,maxAspect,totalVolume};
+}
+function verify(g,order){
+ const pts=g.points;if(pts.length!==(g.segments+1)*3)throw new Error('vertex count mismatch');
+ const expectedVolume=Math.pow(4,-order),eps=2e-6;let maxExp=0,totalVolume=0,minCellVolume=Infinity,maxCellVolume=0,maxCellDiameter=0;
+ for(let i=0;i<g.boxes.length;i+=6){
+  const b=g.boxes,lo=[b[i],b[i+1],b[i+2]],hi=[b[i+3],b[i+4],b[i+5]],d=hi.map((v,a)=>v-lo[a]);
+  if(lo.some(v=>v < -eps)||hi.some(v=>v > 1+eps)||d.some(v=>v<=0))throw new Error('leaf prism outside unit cube or non-positive');
+  for(let a=0;a<3;a++){const e=Math.round(-Math.log2(d[a]));if(!Number.isFinite(e)||Math.abs(d[a]-Math.pow(2,-e))>eps)throw new Error('non-dyadic box width');maxExp=Math.max(maxExp,e)}
+  const vol=d[0]*d[1]*d[2];totalVolume+=vol;minCellVolume=Math.min(minCellVolume,vol);maxCellVolume=Math.max(maxCellVolume,vol);maxCellDiameter=Math.max(maxCellDiameter,Math.hypot(...d));
+  for(let v=0;v<2;v++)for(let a=0;a<3;a++){const x=pts[(i/6+v)*3+a];if(Math.abs(x-lo[a])>eps&&Math.abs(x-hi[a])>eps)throw new Error('path endpoint is not a prism corner')}
+ }
+ if(Math.abs(minCellVolume-expectedVolume)>eps*expectedVolume||Math.abs(maxCellVolume-expectedVolume)>eps*expectedVolume)throw new Error('leaf prism volumes are not uniform');
+ const grid=1<<maxExp;if(grid>256)throw new Error('verification grid exceeds 256');
+ const occ=new Uint8Array(grid*grid*grid);let overlaps=0,voxels=0;
+ for(let i=0;i<g.boxes.length;i+=6){
+  const b=g.boxes,lo=[Math.round(b[i]*grid),Math.round(b[i+1]*grid),Math.round(b[i+2]*grid)],hi=[Math.round(b[i+3]*grid),Math.round(b[i+4]*grid),Math.round(b[i+5]*grid)];
+  for(let x=lo[0];x<hi[0];x++)for(let y=lo[1];y<hi[1];y++)for(let z=lo[2];z<hi[2];z++){const k=(x*grid+y)*grid+z;if(occ[k]!==0)overlaps++;occ[k]++;voxels++}
+ }
+ let holes=0;for(let i=0;i<occ.length;i++)if(occ[i]===0)holes++;
+ return{ok:overlaps===0&&holes===0&&Math.abs(totalVolume-1)<1e-6&&Math.abs(g.totalVolume-1)<1e-6&&g.maxGap<1e-7,grid,voxels,holes,overlaps,volume:totalVolume,cellVolume:expectedVolume,maxCellDiameter};
+}
+
+// WebGL2 renderer.
+const canvas=$('gl');let gl=canvas.getContext('webgl2',{antialias:true,alpha:false,depth:true,powerPreference:'high-performance'}),glError=$('glError');
+if(!gl){glError.style.display='grid';glError.textContent='WebGL2 could not be initialized.\nThe mathematical generator remains available in this file, but this browser cannot render it.'}
+let program=null,vao=null,curveBuffer=null,cellBuffer=null,frameBuffer=null,loc=null,cellCount=0,frameCount=0;
+const vs=`#version 300 es
+precision highp float;
+precision highp int;
+layout(location=0) in vec3 aPosition;
+uniform mat4 uMVP;
+uniform float uVertexCount;
+out float vT;
+void main(){gl_Position=uMVP*vec4(aPosition,1.0);vT=float(gl_VertexID)/max(1.0,uVertexCount-1.0);}`;
+const fs=`#version 300 es
+precision highp float;
+precision highp int;
+in float vT;
+uniform highp int uMode;
+out vec4 outColor;
+void main(){if(uMode==1){outColor=vec4(.30,.58,.68,.30);return;}if(uMode==2){outColor=vec4(.52,.70,.78,.75);return;}vec3 a=vec3(.22,.82,.88),b=vec3(1.0,.66,.34),c=vec3(.70,.58,1.0);vec3 col=mix(a,b,smoothstep(.02,.72,vT));col=mix(col,c,.22*smoothstep(.3,1.0,vT));float pulse=.94+.06*cos(vT*94.0);outColor=vec4(col*pulse,1.0);}`;
+function compileShader(type,src){const sh=gl.createShader(type);gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)){const msg=gl.getShaderInfoLog(sh);gl.deleteShader(sh);throw new Error(msg||'shader compile error')}return sh}
+if(gl){try{const p=gl.createProgram(),a=compileShader(gl.VERTEX_SHADER,vs),b=compileShader(gl.FRAGMENT_SHADER,fs);gl.attachShader(p,a);gl.attachShader(p,b);gl.linkProgram(p);gl.deleteShader(a);gl.deleteShader(b);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p)||'shader link error');program=p;vao=gl.createVertexArray();curveBuffer=gl.createBuffer();cellBuffer=gl.createBuffer();frameBuffer=gl.createBuffer();gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);loc={mvp:gl.getUniformLocation(p,'uMVP'),count:gl.getUniformLocation(p,'uVertexCount'),mode:gl.getUniformLocation(p,'uMode')};}catch(err){glError.style.display='grid';glError.textContent='WebGL shader/setup error:\n'+err.message;gl=null}}
+const camera={yaw:.72,pitch:.42,distance:3.15};let drag=null;
+function mul4(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o}
+function perspective(f,a,n,fz){const q=1/Math.tan(f/2),nf=1/(n-fz),o=new Float32Array(16);o[0]=q/a;o[5]=q;o[10]=(fz+n)*nf;o[11]=-1;o[14]=2*fz*n*nf;return o}
+function lookAt(e,c,u){let z=[e[0]-c[0],e[1]-c[1],e[2]-c[2]],l=Math.hypot(...z)||1;z=z.map(v=>v/l);let x=[u[1]*z[2]-u[2]*z[1],u[2]*z[0]-u[0]*z[2],u[0]*z[1]-u[1]*z[0]];l=Math.hypot(...x)||1;x=x.map(v=>v/l);const y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]],o=new Float32Array(16);o[0]=x[0];o[1]=y[0];o[2]=z[0];o[4]=x[1];o[5]=y[1];o[6]=z[1];o[8]=x[2];o[9]=y[2];o[10]=z[2];o[12]=-(x[0]*e[0]+x[1]*e[1]+x[2]*e[2]);o[13]=-(y[0]*e[0]+y[1]*e[1]+y[2]*e[2]);o[14]=-(z[0]*e[0]+z[1]*e[1]+z[2]*e[2]);o[15]=1;return o}
+function matrix(){const asp=canvas.width/Math.max(1,canvas.height),cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch),sy=Math.sin(camera.yaw),cy=Math.cos(camera.yaw),d=camera.distance,e=[d*cp*sy,d*sp,d*cp*cy];return mul4(perspective(Math.PI/4,asp,.01,40),lookAt(e,[0,0,0],[0,1,0]))}
+function resize(){if(!gl)return;const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}}
+function currentAspect(){const m=Math.max(...frame.counts);return frame.counts.map(v=>Math.pow(.5,m-v))}
+function transformXYZ(x,y,z,asp){return[(x-.5)*asp[0],(y-.5)*asp[1],(z-.5)*asp[2]]}
+function cubeLines(asp){const v=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]],out=[];for(const [a,b] of edges){for(const i of [a,b])out.push(v[i][0]*asp[0]*.5,v[i][1]*asp[1]*.5,v[i][2]*asp[2]*.5)}return new Float32Array(out)}
+function cellLines(boxes,asp){const edges=[[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]],out=[];for(let k=0;k<boxes.length/6;k++){const o=k*6,x0=boxes[o],y0=boxes[o+1],z0=boxes[o+2],x1=boxes[o+3],y1=boxes[o+4],z1=boxes[o+5],v=[[x0,y0,z0],[x1,y0,z0],[x0,y1,z0],[x1,y1,z0],[x0,y0,z1],[x1,y0,z1],[x0,y1,z1],[x1,y1,z1]];for(const [a,b] of edges)for(const i of [a,b])out.push(...transformXYZ(v[i][0],v[i][1],v[i][2],asp))}return new Float32Array(out)}
+function rebuild(){
+ const start=performance.now();$('status').textContent='Solving the four-level endpoint/axis plan…';
+ const g=generateLocal(frame,localOrder);geometry=g;const asp=currentAspect(),path=new Float32Array(g.points.length);
+ for(let i=0;i<g.points.length;i+=3){const p=transformXYZ(g.points[i],g.points[i+1],g.points[i+2],asp);path.set(p,i)}
+ let clines=new Float32Array(0);
+ if($('showCells').checked){const mesh=localOrder===8?generateLocal(frame,4):g;clines=cellLines(mesh.boxes,asp)}
+ if(gl){gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);gl.bufferData(gl.ARRAY_BUFFER,path,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,cellBuffer);gl.bufferData(gl.ARRAY_BUFFER,clines,gl.STATIC_DRAW);const edge=cubeLines(asp);gl.bindBuffer(gl.ARRAY_BUFFER,frameBuffer);gl.bufferData(gl.ARRAY_BUFFER,edge,gl.STATIC_DRAW);cellCount=clines.length/3;frameCount=edge.length/3}
+ const v=verify(g,localOrder);if(!v.ok)throw new Error('Volume partition validation failed: '+JSON.stringify(v));
+ let actualAspect=1;for(let i=0;i<g.boxes.length;i+=6){const d=[(g.boxes[i+3]-g.boxes[i])*asp[0],(g.boxes[i+4]-g.boxes[i+1])*asp[1],(g.boxes[i+5]-g.boxes[i+2])*asp[2]],mn=Math.min(...d),mx=Math.max(...d);actualAspect=Math.max(actualAspect,mx/mn)}
+ $('cellMetric').textContent=g.segments.toLocaleString();$('gapMetric').textContent=g.maxGap.toExponential(1);$('aspectMetric').textContent=actualAspect.toFixed(2);$('depthMetric').textContent=history.length.toLocaleString();
+ $('address').textContent='ADDRESS · '+(frame.address||'ε')+'  ('+history.length+' levels)';$('modeLabel').textContent='4-ARY VOLUME / ORDER '+localOrder;$('shapeLabel').textContent='CURRENT REGION ASPECT · '+asp.map(v=>v.toFixed(2)).join(' : ');
+ $('proofLabel').textContent=g.segments.toLocaleString()+' CELLS · '+v.grid+'³ GRID COVER';
+ $('status').innerHTML='<span class="good">Verified:</span> '+g.segments.toLocaleString()+' cells · '+v.grid+'³ exact voxel cover · equal cell volume · corner-to-corner path · no holes / overlaps · '+Math.round(performance.now()-start)+' ms';$('up').disabled=history.length===0;draw();
+}
+function draw(){if(!gl||!program)return;resize();gl.clearColor(.018,.034,.052,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.useProgram(program);gl.uniformMatrix4fv(loc.mvp,false,matrix());gl.bindVertexArray(vao);if($('showCells').checked&&cellCount>0){gl.bindBuffer(gl.ARRAY_BUFFER,cellBuffer);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.uniform1f(loc.count,cellCount);gl.uniform1i(loc.mode,1);gl.drawArrays(gl.LINES,0,cellCount)}gl.bindBuffer(gl.ARRAY_BUFFER,frameBuffer);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.uniform1f(loc.count,frameCount);gl.uniform1i(loc.mode,2);gl.drawArrays(gl.LINES,0,frameCount);if($('showPath').checked){gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.uniform1f(loc.count,geometry.points.length/3);gl.uniform1i(loc.mode,0);gl.lineWidth(1.6);gl.drawArrays(gl.LINE_STRIP,0,geometry.points.length/3)}gl.bindVertexArray(null)}
+function zoomChild(index){if(index<0||index>3)return;const p=frame.planDepth>0?frame.plan:buildPlan(frame.e,frame.x,frame.counts,4),ch=p.children[index],cc=frame.counts.slice();cc[p.axis]++;const next=normalizeCounts(cc),nextDepth=frame.planDepth>0?frame.planDepth-1:3;history.push({...frame});frame={e:ch.e,x:ch.x,counts:next,address:frame.address+String(index),plan:nextDepth>0?p.sub[index]:null,planDepth:nextDepth};selectedChild=0;syncChildButtons();rebuild()}
+function zoomUp(){if(!history.length)return;frame=history.pop();selectedChild=0;syncChildButtons();rebuild()}
+function reset(){auto=false;$('auto').textContent='AUTO DESCENT';history=[];frame={...initial,counts:[0,0,0],address:'',plan:null,planDepth:0};selectedChild=0;camera.yaw=.72;camera.pitch=.42;camera.distance=3.15;syncChildButtons();rebuild()}
+function syncChildButtons(){for(const b of $('childButtons').querySelectorAll('button'))b.classList.toggle('active',Number(b.dataset.child)===selectedChild)}
+function selectChild(n){selectedChild=n;syncChildButtons()}
+let autoTimer=0;function toggleAuto(){auto=!auto;$('auto').textContent=auto?'STOP AUTO':'AUTO DESCENT';autoTimer=0;if(auto)requestAnimationFrame(autoTick)}function autoTick(t){if(!auto)return;if(!autoTimer||t-autoTimer>650){zoomChild(autoChild);autoChild=(autoChild+1)&3;autoTimer=t}requestAnimationFrame(autoTick)}
+let rotateTimer=0;function rotateTick(){if(!autoRotate)return;camera.yaw+=.003;draw();requestAnimationFrame(rotateTick)}
+$('detail').addEventListener('change',e=>{localOrder=Number(e.target.value);const t=$('showCells').parentElement;t.lastChild.textContent=localOrder===8?' Show four-level parent-prism mesh':' Show prism boundaries';rebuild()});$('showCells').addEventListener('change',rebuild);$('showPath').addEventListener('change',draw);$('childButtons').addEventListener('click',e=>{const b=e.target.closest('button[data-child]');if(b)selectChild(Number(b.dataset.child))});$('enter').addEventListener('click',()=>zoomChild(selectedChild));$('up').addEventListener('click',zoomUp);$('reset').addEventListener('click',reset);$('auto').addEventListener('click',toggleAuto);$('rotate').addEventListener('click',()=>{autoRotate=!autoRotate;$('rotate').textContent=autoRotate?'STOP ROTATE':'AUTO ROTATE';if(autoRotate)requestAnimationFrame(rotateTick)});$('validate').addEventListener('click',()=>{try{const v=verify(geometry,localOrder);$('status').textContent='VALIDATION '+(v.ok?'PASSED':'FAILED')+' · '+v.voxels.toLocaleString()+' voxels · '+v.grid+'³ grid · '+v.holes+' holes · '+v.overlaps+' overlaps'}catch(e){$('status').textContent='VALIDATION ERROR · '+e.message}});
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};camera.yaw+=dx*.008;camera.pitch=Math.max(-1.42,Math.min(1.42,camera.pitch+dy*.008));draw()});canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);canvas.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.distance=Math.max(1.2,Math.min(10,camera.distance*Math.exp(e.deltaY*.001)));draw()}else if(e.deltaY>0)zoomChild(selectedChild);else zoomUp()},{passive:false});window.addEventListener('resize',draw);window.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;if(e.key>='1'&&e.key<='4'){selectChild(Number(e.key)-1)}else if(e.key==='Enter'){zoomChild(selectedChild)}else if(e.key==='Backspace'){e.preventDefault();zoomUp()}else if(e.key==='Home'){reset()}else if(e.key===' '){e.preventDefault();toggleAuto()}});
+
+// Bootstrap and verify the finite-state balance invariant for the active root.
+try{const rootPlan=buildPlan(frame.e,frame.x,frame.counts,4);if(!rootPlan)throw new Error('No root plan');const rootCheck=cost(frame.e,frame.x,frame.counts,4);if(rootCheck>2)throw new Error('Balance bound exceeded');rebuild()}catch(err){$('status').textContent='Generator error: '+err.message;console.error(err)}
+})();
+</script>
+</body>
+</html>
