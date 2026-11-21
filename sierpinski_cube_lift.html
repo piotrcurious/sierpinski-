@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sierpiński / 3D recursive space-filling curve</title>
+<style>
+:root{color-scheme:dark;--bg:#090d13;--panel:#101823;--line:#243343;--muted:#91a3b5;--text:#e8f0f6;--cyan:#5ed6e5;--gold:#f5b85d;--green:#9de2bd}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,select,input{font:inherit}
+.app{height:100%;display:flex;flex-direction:column;min-height:0}
+header{height:64px;flex:0 0 64px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#0c121b}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}.mark{width:28px;height:28px;border:1px solid #477483;border-radius:7px;position:relative;background:linear-gradient(135deg,#173748,#111c28)}.mark:before,.mark:after{content:"";position:absolute;border:1px solid var(--cyan);inset:5px;transform:rotate(45deg)}.mark:after{inset:9px;border-color:var(--gold);transform:rotate(0)}
+h1{font-size:14px;letter-spacing:.16em;font-weight:700;margin:0}.subtitle{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:2px}.topnote{font-size:11px;color:#a9bbc9;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;padding:12px}
+.stage{position:relative;min-width:0;min-height:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 48% 45%,#172534 0%,#0b121c 55%,#080d14 100%)}
+canvas{width:100%;height:100%;display:block;touch-action:none;outline:none}
+.gl-error{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:#ffd1a7;background:#101823}
+.overlay{position:absolute;pointer-events:none}.tl{top:15px;left:17px}.tr{top:15px;right:17px;text-align:right}.bl{bottom:15px;left:17px}.br{bottom:15px;right:17px;text-align:right}
+.kicker{font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:#83a0b4}.stage-title{font-size:15px;font-weight:650;margin-top:3px}.stage-sub{font-size:11px;color:#9aabba;margin-top:2px}.live{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9fe1c4}.live:before{content:"";width:6px;height:6px;border-radius:50%;background:#65d7a2;box-shadow:0 0 10px #65d7a2}
+.hint{font-size:10px;color:#8499aa;line-height:1.55;text-shadow:0 1px 3px #000}.badge-line{display:inline-flex;align-items:center;gap:7px;border:1px solid #344959;border-radius:20px;padding:6px 10px;background:#0c151fd9;color:#bcd0dd;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+aside{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto;padding-right:2px}.panel{background:linear-gradient(180deg,#121d29,#0e1721);border:1px solid var(--line);border-radius:11px;padding:14px}.panel h2{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#9bb0c0;margin:0 0 12px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{border:1px solid #233544;background:#0b131d;border-radius:8px;padding:10px}.metric .v{font-size:21px;font-weight:650;letter-spacing:-.04em;color:#e7f3f7;font-variant-numeric:tabular-nums}.metric .l{font-size:9px;color:#8299aa;text-transform:uppercase;letter-spacing:.13em;margin-top:3px}
+.controls{display:grid;gap:10px}.button-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.btn{border:1px solid #304555;background:#162431;color:#dce9ef;border-radius:7px;padding:9px 8px;font-size:11px;font-weight:650;letter-spacing:.05em;cursor:pointer;transition:background .15s,border-color .15s}.btn:hover{background:#1c3342;border-color:#4e8290}.btn.primary{background:#173946;border-color:#3b8090;color:#c9f4f6}.btn.active{border-color:var(--gold);color:#ffdda7;background:#382b1c}.btn:disabled{opacity:.35;cursor:not-allowed}
+.control{display:grid;gap:6px}.control-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.control label,.control-head label{font-size:11px;color:#c1d1dc}.readout{font-size:11px;color:var(--cyan);font-variant-numeric:tabular-nums}.range{width:100%;accent-color:var(--cyan)}select{background:#0b131c;color:#e1edf3;border:1px solid #334a5b;padding:7px 9px;border-radius:6px;width:100%}
+.toggles{display:flex;flex-wrap:wrap;gap:7px}.toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid #2a3d4c;border-radius:6px;padding:6px 8px;color:#aebfca;font-size:10px;cursor:pointer}.toggle input{accent-color:var(--cyan);margin:0}
+.codebox{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;line-height:1.7;color:#b9d9df;background:#0a121b;border:1px solid #243746;border-radius:7px;padding:9px;word-break:break-word;min-height:42px}.small{color:#8499a9;font-size:10px;line-height:1.55}.equation{font-family:ui-monospace,monospace;color:#d5e8ec;font-size:11px;line-height:1.65;background:#0a131c;border-left:2px solid #4f9eaa;padding:8px 9px}.qa{color:var(--green);font-size:10px;letter-spacing:.04em}.footer{height:28px;flex:0 0 28px;padding:4px 18px;border-top:1px solid #1b2a38;color:#74899a;font-size:10px;display:flex;justify-content:space-between;gap:12px;align-items:center}.footer a{color:#8fcbd4;text-decoration:none}.footer a:hover{text-decoration:underline}
+@media(max-width:850px){main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,1fr) auto;overflow:auto}.stage{min-height:48vh}aside{display:grid;grid-template-columns:1fr 1fr;overflow:visible}.panel{min-width:0}.footer{height:auto;min-height:28px;flex-wrap:wrap}}
+@media(max-width:560px){header{padding:0 13px;height:56px;flex-basis:56px}.topnote{display:none}main{padding:7px;gap:7px;grid-template-rows:minmax(300px,48vh) auto}.stage{min-height:300px}aside{grid-template-columns:1fr}.panel{padding:12px}.tl{top:10px;left:11px}.tr{top:10px;right:11px}.bl{bottom:10px;left:11px}.br{bottom:10px;right:11px}.stage-title{font-size:13px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>SIERPIŃSKI / CUBE RECURSION</h1><div class="subtitle">A three-dimensional space-filling map · WebGL2</div></div></div>
+  <div class="topnote">8 child maps · 3 axes · recursive address zoom</div>
+</header>
+<main>
+  <section class="stage" id="stage">
+    <canvas id="glcanvas" aria-label="Interactive three-dimensional Sierpinski space-filling curve"></canvas>
+    <div class="gl-error" id="glerror">This demo requires WebGL 2.0. Please open it in a browser with WebGL2 enabled.</div>
+    <div class="overlay tl"><div class="kicker">Current local cell</div><div class="stage-title">3D cube-filling curve</div><div class="stage-sub" id="viewInfo">Canonical cube · axis-preserving view</div></div>
+    <div class="overlay tr"><div class="live" id="modeState">LIVE RECURSION</div><div class="stage-sub" id="childInfo">Next child: —</div></div>
+    <div class="overlay bl"><div class="badge-line" id="cellBadge">ROOT CELL · 2⁰</div></div>
+    <div class="overlay br"><div class="hint">DRAG · ORBIT &nbsp; / &nbsp; WHEEL · ENTER CHILD<br>SHIFT + WHEEL · CAMERA DISTANCE</div></div>
+  </section>
+  <aside>
+    <section class="panel">
+      <h2>Recursion state</h2>
+      <div class="metrics">
+        <div class="metric"><div class="v" id="globalOrder">4</div><div class="l">Global order</div></div>
+        <div class="metric"><div class="v" id="depthValue">0</div><div class="l">Zoom depth</div></div>
+        <div class="metric"><div class="v" id="segmentCount">4,096</div><div class="l">Local segments</div></div>
+        <div class="metric"><div class="v" id="gridPitch">1 / 8</div><div class="l">Local edge pitch</div></div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="small">The displayed curve is an order-<span id="localOrderInline">4</span> approximation inside the current dyadic cell. Every entered child adds exactly one level to the <b>global</b> recursion order; only the local detail window is rendered.</div>
+    </section>
+    <section class="panel">
+      <h2>Navigate the recursion</h2>
+      <div class="controls">
+        <div class="button-row">
+          <button class="btn" id="backBtn">− STEP</button>
+          <button class="btn" id="autoBtn">AUTO</button>
+          <button class="btn primary" id="forwardBtn">+ STEP</button>
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="parameter">Curve address t</label><span class="readout" id="tReadout">0.314159</span></div>
+          <input class="range" type="range" min="0" max="999999" step="1" value="314159" id="parameter">
+          <div class="small">This parameter selects the next recursive cube. At every step, t is transformed by the exact inverse interval map.</div>
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="localOrder">Visible local order</label><span class="readout" id="localOrderReadout">4</span></div>
+          <select id="localOrder"><option value="2">2 · 64 segments</option><option value="3">3 · 512 segments</option><option value="4" selected>4 · 4,096 segments</option><option value="5">5 · 32,768 segments</option></select>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="scaffoldToggle" checked> Cell scaffold</label>
+          <label class="toggle"><input type="checkbox" id="xyToggle"> XY projection</label>
+        </div>
+        <div class="button-row" style="grid-template-columns:1fr 1fr">
+          <button class="btn" id="resetBtn">RESET ADDRESS</button>
+          <button class="btn" id="cameraBtn">RESET CAMERA</button>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Selected cell address</h2>
+      <div class="codebox" id="addressBox">ROOT</div>
+      <div style="height:7px"></div>
+      <div class="small" id="cellCoordinates">Root cube: [0,1]³</div>
+      <div style="height:5px"></div>
+      <div class="small" id="orientationText">Frame orientation: X+ · Y+ · Z+</div>
+      <div style="height:7px"></div>
+      <div class="small">Current next octant: <span id="nextCode" style="color:var(--gold)">—</span></div>
+    </section>
+    <section class="panel">
+      <h2>Geometry / audit</h2>
+      <div class="equation">wᵢ(x)ⱼ = ½ − (½ − βᵢⱼ)xⱼ<br>βᵢ = reflected 3-bit Gray code<br>8 maps · scale = ½ on X, Y, Z</div>
+      <div style="height:8px"></div>
+      <div class="qa" id="qaText">Checking lattice continuity…</div>
+      <div style="height:6px"></div>
+      <div class="small">Z is a spatial coordinate in the same recursive cube partition as X and Y. Each level subdivides the volume into eight subcubes; it does not assign height from path time.</div>
+      <div style="height:7px"></div>
+      <div class="small">Wrap convention: c = 5/8. The paper's stated endpoint intervals (3/64 and 5/64) imply the complement of the 3/8 printed in its pseudocode; this version uses the closed, edge-connected dyadic traversal and documents that choice explicitly.</div>
+    </section>
+  </aside>
+</main>
+<footer>
+  <span>3D Sierpiński-type generalization · recursive subcube maps · infinite address depth with bounded local rendering</span>
+  <span>Construction basis: <a href="https://doi.org/10.15439/2023F5773" target="_blank" rel="noopener">Skubalska-Rafałłowicz (2023), DOI 10.15439/2023F5773</a></span>
+</footer>
+</div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('glcanvas');
+const gl = canvas.getContext('webgl2', {antialias:true, alpha:true, depth:true, stencil:false, powerPreference:'high-performance'});
+if (!gl) { $('glerror').style.display='grid'; return; }
+
+// The d=3 Sierpinski-type map is an 8-map IFS on the unit cube.
+// The complementary wrap constant 5/8 matches the paper's stated
+// first/last interval lengths (3/64 and 5/64); see the note below.
+const D = 3, FAN = 8, WRAP = 5/8;
+const MAX_LOCAL_ORDER = 5;
+let localOrder = 4, segmentData = null, curveCount = 0;
+let state = {
+  tN: 314159n, tD: 1000000n,
+  depth: 0,
+  cellLo: [0n,0n,0n],
+  frame: [1,1,1],
+  address: [],
+  history: []
+};
+let camera = {yaw:0.78, pitch:0.48, distance:3.4, xy:false};
+let pointer = null, auto = false, lastAuto = 0, raf = 0;
+let scaffold = true;
+
+function compile(type, source) {
+  const sh = gl.createShader(type); gl.shaderSource(sh, source); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(vs, fs) {
+  const p = gl.createProgram(); gl.attachShader(p, compile(gl.VERTEX_SHADER,vs)); gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+const curveProgram = program(`#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec3 aStart;
+layout(location=2) in vec3 aEnd;
+layout(location=3) in float aZ;
+uniform mat4 uVP;
+uniform vec2 uViewport;
+uniform float uHalfWidth;
+out float vZ;
+void main(){
+  vec4 p0=uVP*vec4(aStart,1.0), p1=uVP*vec4(aEnd,1.0);
+  vec2 d=(p1.xy/p1.w-p0.xy/p0.w)*uViewport;
+  float dl=max(length(d),0.0001);
+  vec2 n=vec2(-d.y,d.x)/dl;
+  vec4 p=mix(p0,p1,aCorner.x);
+  p.xy += n*aCorner.y*(2.0*uHalfWidth/uViewport)*p.w;
+  gl_Position=p; vZ=aZ;
+}`, `#version 300 es
+precision highp float;
+in float vZ;
+out vec4 outColor;
+void main(){
+  float h=clamp(vZ,0.0,1.0);
+  vec3 low=vec3(0.16,0.67,0.83);
+  vec3 high=vec3(1.0,0.67,0.28);
+  vec3 c=mix(low,high,h);
+  outColor=vec4(c,0.96);
+}`);
+const lineProgram = program(`#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPosition;
+uniform mat4 uVP;
+void main(){ gl_Position=uVP*vec4(aPosition,1.0); }`, `#version 300 es
+precision highp float;
+uniform vec4 uColor;
+out vec4 outColor;
+void main(){ outColor=uColor; }`);
+const pointProgram = program(`#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPosition;
+uniform mat4 uVP;
+uniform float uSize;
+void main(){ gl_Position=uVP*vec4(aPosition,1.0); gl_PointSize=uSize; }`, `#version 300 es
+precision highp float;
+out vec4 outColor;
+void main(){ vec2 q=gl_PointCoord-0.5; if(dot(q,q)>0.25) discard; outColor=vec4(1.0,0.78,0.39,1.0); }`);
+
+const curveVAO=gl.createVertexArray(), curveBuffer=gl.createBuffer(), cornerBuffer=gl.createBuffer();
+gl.bindVertexArray(curveVAO);
+gl.bindBuffer(gl.ARRAY_BUFFER,cornerBuffer);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,-1,1,-1,1,1,0,-1,1,1,0,1]),gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);
+const stride=7*4;
+for(let i=1;i<=3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,i===3?1:3,gl.FLOAT,false,stride,(i===1?0:i===2?12:24));gl.vertexAttribDivisor(i,1);}
+gl.bindVertexArray(null);
+const lineVAO=gl.createVertexArray(), lineBuffer=gl.createBuffer();
+gl.bindVertexArray(lineVAO); gl.bindBuffer(gl.ARRAY_BUFFER,lineBuffer); gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+const pointVAO=gl.createVertexArray(), pointBuffer=gl.createBuffer();
+gl.bindVertexArray(pointVAO); gl.bindBuffer(gl.ARRAY_BUFFER,pointBuffer); gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+
+function grayBits(index){
+  let km=index, B=[];
+  for(let i=1;i<=3;i++){
+    const th=2**(3-i); let be=km>=th?1:0; B.push(be); km-=be*th;
+    if(be===1) km=th-km-1;
+  }
+  // The source algorithm applies B[0..2] to x3,x2,x1 respectively.
+  return [B[2],B[1],B[0]]; // X,Y,Z bits
+}
+function curvePoint(t,k){
+  let x=[1,1,1], kmSeq=[];
+  for(let j=0;j<k;j++){
+    let raw=Math.floor(t*8+WRAP);
+    t=t*8+WRAP-raw;
+    if(raw===8) raw=0;
+    kmSeq.push(raw);
+  }
+  for(let j=k-1;j>=0;j--){
+    const b=grayBits(kmSeq[j]);
+    for(let axis=0;axis<3;axis++) x[axis]=0.5+(b[axis]?0.5:-0.5)*x[axis];
+  }
+  return x;
+}
+function localCurve(k){
+  const n=8**k, pts=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const p=curvePoint(i/n,k); pts[i*3]=p[0];pts[i*3+1]=p[1];pts[i*3+2]=p[2];
+  }
+  const data=new Float32Array(n*7);
+  for(let i=0;i<n;i++){
+    const j=(i+1)%n;
+    data.set(pts.subarray(i*3,i*3+3),i*7);
+    data.set(pts.subarray(j*3,j*3+3),i*7+3);
+    data[i*7+6]=(pts[i*3+2]+pts[j*3+2])*0.5;
+  }
+  return {data,pts,count:n};
+}
+function verifyCurve(k, pts){
+  const n=8**k, scale=2**(k-1), pitch=1/scale; let maxErr=0, badAxes=0, inBounds=true; const seen=new Set();
+  for(let i=0;i<n;i++){
+    const ax=Math.round(pts[i*3]*scale), ay=Math.round(pts[i*3+1]*scale), az=Math.round(pts[i*3+2]*scale);
+    if(ax<0||ay<0||az<0||ax>scale||ay>scale||az>scale) inBounds=false;
+    seen.add(ax+','+ay+','+az);
+    const j=(i+1)%n; const dx=Math.abs(pts[i*3]-pts[j*3]),dy=Math.abs(pts[i*3+1]-pts[j*3+1]),dz=Math.abs(pts[i*3+2]-pts[j*3+2]);
+    const sum=dx+dy+dz; maxErr=Math.max(maxErr,Math.abs(sum-pitch));
+    if((dx>1e-6)+(dy>1e-6)+(dz>1e-6)!==1) badAxes++;
+  }
+  const expected=(scale+1)**3;
+  return {ok:inBounds&&maxErr<1e-5&&badAxes===0&&seen.size===expected,unique:seen.size,expected,pitch};
+}
+// Exact parameter recursion: t' = 8t + 5/8 - i, with the closing child 8 aliased to 0.
+// BigInt keeps the address exact after hundreds or thousands of recursive zoom steps.
+function rationalChild(n,d){
+  const N=64n*n+5n*d, D=8n*d;
+  const raw=N/D, rem=N% D;
+  const child=raw===8n?0:Number(raw);
+  return {child, n:rem, d:D};
+}
+function ratioNumber(n,d){
+  if(n===0n)return 0;
+  const bits=x=>x.toString(2).length;
+  const shift=Math.max(0,bits(d)-52);
+  return Number(n>>BigInt(shift))/Number(d>>BigInt(shift));
+}
+function childPreview(){
+  return rationalChild(state.tN,state.tD);
+}
+function snapshotForHistory(){
+  return {tN:state.tN,tD:state.tD,depth:state.depth,cellLo:state.cellLo.slice(),frame:state.frame.slice()};
+}
+function zoomIn(){
+  const c=rationalChild(state.tN,state.tD), bits=grayBits(c.child);
+  state.history.push(snapshotForHistory());
+  for(let a=0;a<3;a++){
+    const worldBit=state.frame[a]>0?bits[a]:1-bits[a];
+    state.cellLo[a]=state.cellLo[a]*2n+BigInt(worldBit);
+    state.frame[a] *= (bits[a] ? 1 : -1);
+  }
+  state.tN=c.n; state.tD=c.d; state.depth++;
+  state.address.push(c.child);
+  updateFrameGeometry();
+  updateMetrics();
+}
+function zoomOut(){
+  if(!state.history.length)return;
+  const prev=state.history.pop(); state.tN=prev.tN;state.tD=prev.tD;state.depth=prev.depth;state.cellLo=prev.cellLo;state.frame=prev.frame;
+  state.address.pop();
+  updateFrameGeometry();
+  updateMetrics();
+}
+function resetAddress(){
+  const v=BigInt($('parameter').value);
+  state={tN:v,tD:1000000n,depth:0,cellLo:[0n,0n,0n],frame:[1,1,1],address:[],history:[]};
+  if(canonicalSegmentData) updateFrameGeometry();
+  updateMetrics();
+}
+function setParameterDisplay(){ $('tReadout').textContent=ratioNumber(state.tN,state.tD).toFixed(6); }
+function shortPath(){
+  const a=state.address, hex=v=>v.toString(16).toUpperCase();
+  if(!a.length)return 'ROOT';
+  if(a.length<=20)return a.map(hex).join(' · ');
+  return a.slice(0,7).map(hex).join(' · ')+' · … · '+a.slice(-9).map(hex).join(' · ');
+}
+function updateMetrics(){
+  $('globalOrder').textContent=(state.depth+localOrder).toLocaleString();
+  $('depthValue').textContent=state.depth.toLocaleString();
+  $('segmentCount').textContent=curveCount.toLocaleString();
+  $('gridPitch').textContent='1 / '+(2**(localOrder-1));
+  $('localOrderInline').textContent=localOrder;
+  $('localOrderReadout').textContent=localOrder;
+  $('addressBox').textContent=shortPath();
+  $('cellBadge').textContent=state.depth===0?'ROOT CELL · 2⁰':`CELL · SIDE 2⁻${state.depth}`;
+  const L=state.depth>0?`[${state.cellLo.map(v=>v.toString()).join(', ')}] / 2^${state.depth}`:'Root cube: [0,1]³';
+  $('cellCoordinates').textContent=state.depth>0?`Root-grid address ${L}`:L;
+  $('orientationText').textContent=`Frame orientation: X${state.frame[0]>0?'+':'−'} · Y${state.frame[1]>0?'+':'−'} · Z${state.frame[2]>0?'+':'−'}`;
+  const c=childPreview(), b=grayBits(c.child), code=b.map(x=>x?'1':'0').join('');
+  $('childInfo').textContent=`Next child: ${c.child.toString().padStart(1,'0')} · ${code}`;
+  $('nextCode').textContent=`index ${c.child} · Gray ${code}`;
+  setParameterDisplay();
+  $('backBtn').disabled=state.depth===0;
+  $('viewInfo').textContent=camera.xy?'XY orthographic projection of the 3D path':`Axis frame ${state.frame.map(x=>x>0?'+':'−').join(' / ')} · rebased cell`;
+}
+
+// Minimal column-major matrix helpers.
+function perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]);}
+function lookAt(eye,center,up){
+  let zx=eye[0]-center[0],zy=eye[1]-center[1],zz=eye[2]-center[2];let l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;
+  let xx=up[1]*zz-up[2]*zy,xy=up[2]*zx-up[0]*zz,xz=up[0]*zy-up[1]*zx;l=Math.hypot(xx,xy,xz)||1;xx/=l;xy/=l;xz/=l;
+  let yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;
+  return new Float32Array([xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0, -(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1]);
+}
+function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+function viewProjection(){
+  const center=[.5,.5,.5];let eye,up=[0,1,0];
+  if(camera.xy){eye=[.5,.5,.5+camera.distance];}
+  else{const cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch);eye=[.5+camera.distance*cp*Math.sin(camera.yaw),.5+camera.distance*sp,.5+camera.distance*cp*Math.cos(camera.yaw)];}
+  return multiply(perspective(0.72,canvas.width/Math.max(1,canvas.height),.01,100),lookAt(eye,center,up));
+}
+function reflectPoint(p){return [state.frame[0]>0?p[0]:1-p[0],state.frame[1]>0?p[1]:1-p[1],state.frame[2]>0?p[2]:1-p[2]];}
+function currentParameterPoint(){return reflectPoint(curvePoint(ratioNumber(state.tN,state.tD),Math.min(localOrder,5)));}
+function addSegment(arr,a,b){arr.push(...a,...b);}
+function addBoxLines(arr,lo,hi){
+  const v=[];for(let i=0;i<8;i++)v.push([i&1?hi[0]:lo[0],i&2?hi[1]:lo[1],i&4?hi[2]:lo[2]]);
+  for(let i=0;i<8;i++)for(let bit=0;bit<3;bit++){const j=i^(1<<bit);if(i<j)addSegment(arr,v[i],v[j]);}
+}
+function makeScaffold(){
+  const base=[],selected=[];
+  addBoxLines(base,[0,0,0],[1,1,1]);
+  // Three mutually perpendicular mid-planes show the actual 2x2x2 volume split.
+  for(const x of [0.5]){const a=[x,0,0],b=[x,1,0],c=[x,0,1],d=[x,1,1];addSegment(base,a,b);addSegment(base,c,d);addSegment(base,a,c);addSegment(base,b,d);}
+  for(const y of [0.5]){const a=[0,y,0],b=[1,y,0],c=[0,y,1],d=[1,y,1];addSegment(base,a,b);addSegment(base,c,d);addSegment(base,a,c);addSegment(base,b,d);}
+  for(const z of [0.5]){const a=[0,0,z],b=[1,0,z],c=[0,1,z],d=[1,1,z];addSegment(base,a,b);addSegment(base,c,d);addSegment(base,a,c);addSegment(base,b,d);}
+  const c=childPreview(),bits=grayBits(c.child),viewBits=bits.map((b,i)=>state.frame[i]>0?b:1-b);
+  const lo=viewBits.map(b=>b*.5),hi=viewBits.map(b=>(b+1)*.5);addBoxLines(selected,lo,hi);
+  return {base:new Float32Array(base),selected:new Float32Array(selected)};
+}
+let scaffoldBuffers={base:null,selected:null};
+function uploadLineData(buf,data){gl.bindBuffer(gl.ARRAY_BUFFER,lineBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);}
+function drawLines(data,vp,color,width){
+  if(!data.length)return;
+  uploadLineData(lineBuffer,data);
+  gl.useProgram(lineProgram);gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram,'uVP'),false,vp);gl.uniform4fv(gl.getUniformLocation(lineProgram,'uColor'),color);
+  gl.bindVertexArray(lineVAO);gl.lineWidth(width);gl.drawArrays(gl.LINES,0,data.length/3);gl.bindVertexArray(null);
+}
+function drawPoint(vp){
+  const p=currentParameterPoint();gl.bindBuffer(gl.ARRAY_BUFFER,pointBuffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(p),gl.DYNAMIC_DRAW);
+  gl.useProgram(pointProgram);gl.uniformMatrix4fv(gl.getUniformLocation(pointProgram,'uVP'),false,vp);gl.uniform1f(gl.getUniformLocation(pointProgram,'uSize'),9);
+  gl.bindVertexArray(pointVAO);gl.drawArrays(gl.POINTS,0,1);gl.bindVertexArray(null);
+}
+function render(){
+  const w=canvas.width,h=canvas.height;if(!w||!h)return;
+  gl.viewport(0,0,w,h);gl.clearColor(.025,.039,.055,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  const vp=viewProjection();
+  if(scaffold){
+    const g=makeScaffold();drawLines(g.base,vp,[.31,.42,.51,.48],1);drawLines(g.selected,vp,[.96,.65,.29,.98],2);
+  }
+  if(segmentData){
+    gl.useProgram(curveProgram);gl.uniformMatrix4fv(gl.getUniformLocation(curveProgram,'uVP'),false,vp);gl.uniform2f(gl.getUniformLocation(curveProgram,'uViewport'),w,h);gl.uniform1f(gl.getUniformLocation(curveProgram,'uHalfWidth'),localOrder>=5?0.75:1.15);
+    gl.bindVertexArray(curveVAO);
+    // Orientation flips are applied as a per-vertex cube reflection.
+    // For efficient bounded rendering, rewrite only when the frame changes.
+    gl.drawArraysInstanced(gl.TRIANGLES,0,6,curveCount);
+    gl.bindVertexArray(null);
+  }
+  drawPoint(vp);
+}
+// Base geometry remains canonical; each address step reapplies exact axis reflections.
+let canonicalSegmentData=null;
+function rebuildCurve(){
+  const c=localCurve(localOrder);canonicalSegmentData=c.data;curveCount=c.count;
+  const q=verifyCurve(localOrder,c.pts);
+  $('qaText').textContent=q.ok?`PASS · closed cycle · ${q.unique.toLocaleString()} / ${q.expected.toLocaleString()} lattice vertices · axis step ${q.pitch}`:'CHECK FAILED · curve sampling / adjacency mismatch';
+  updateFrameGeometry();
+  updateMetrics();
+}
+function updateFrameGeometry(){
+  segmentData=new Float32Array(canonicalSegmentData);
+  for(let i=0;i<curveCount;i++){
+    for(let v=0;v<2;v++)for(let a=0;a<3;a++){
+      const ix=i*7+v*3+a;if(state.frame[a]<0)segmentData[ix]=1-segmentData[ix];
+    }
+    segmentData[i*7+6]=(segmentData[i*7+2]+segmentData[i*7+5])*0.5;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,curveBuffer);gl.bufferData(gl.ARRAY_BUFFER,segmentData,gl.DYNAMIC_DRAW);
+}
+function resize(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+}
+function frame(now){
+  if(auto && now-lastAuto>850){zoomIn();lastAuto=now;}
+  resize();render();raf=requestAnimationFrame(frame);
+}
+function setAuto(v){auto=v;$('autoBtn').classList.toggle('active',auto);$('autoBtn').textContent=auto?'STOP':'AUTO';$('modeState').textContent=auto?'AUTO ZOOM ACTIVE':'LIVE RECURSION';}
+
+$('forwardBtn').addEventListener('click',zoomIn);$('backBtn').addEventListener('click',zoomOut);
+$('autoBtn').addEventListener('click',()=>setAuto(!auto));
+$('resetBtn').addEventListener('click',()=>{setAuto(false);resetAddress();});
+$('cameraBtn').addEventListener('click',()=>{camera.yaw=.78;camera.pitch=.48;camera.distance=3.4;camera.xy=false;$('xyToggle').checked=false;updateMetrics();});
+$('parameter').addEventListener('input',()=>{setAuto(false);resetAddress();});
+$('localOrder').addEventListener('change',e=>{localOrder=Math.max(2,Math.min(MAX_LOCAL_ORDER,Number(e.target.value)|0));rebuildCurve();});
+$('scaffoldToggle').addEventListener('change',e=>{scaffold=e.target.checked;});
+$('xyToggle').addEventListener('change',e=>{camera.xy=e.target.checked;updateMetrics();});
+canvas.addEventListener('pointerdown',e=>{pointer={x:e.clientX,y:e.clientY,id:e.pointerId};canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer.x=e.clientX;pointer.y=e.clientY;camera.yaw-=dx*.008;camera.pitch=Math.max(-1.45,Math.min(1.45,camera.pitch+dy*.008));});
+canvas.addEventListener('pointerup',()=>{pointer=null;});canvas.addEventListener('pointercancel',()=>{pointer=null;});
+canvas.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.distance=Math.max(1.6,Math.min(8,camera.distance*Math.exp(e.deltaY*.001)));}else if(e.deltaY<0)zoomIn();else zoomOut();},{passive:false});
+window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;if(e.key==='+'||e.key==='='){zoomIn();}else if(e.key==='-'){zoomOut();}else if(e.code==='Space'){e.preventDefault();setAuto(!auto);}else if(e.key.toLowerCase()==='r'){setAuto(false);resetAddress();}});
+
+// Verify and render the initial approximation.
+try { rebuildCurve(); resetAddress(); frame(0); }
+catch(err){console.error(err);$('glerror').style.display='grid';$('glerror').textContent='WebGL setup error: '+err.message;}
+
+// Mathematical note for this implementation:
+// Skubalska-Rafałłowicz (2023) defines the d-dimensional family by 2^d
+// half-scale reflected cube maps in reflected Gray-code order. For d=3 this
+// is an 8-map cube recursion. The paper's prose specifies endpoint intervals
+// 3/64 and 5/64; the complementary wrap c=5/8 gives that split and a closed,
+// edge-connected equal-time dyadic polygonal approximation. The printed
+// pseudocode line for c shows 3/8, the reversed wrap convention.
+})();
+</script>
+</body>
+</html>
