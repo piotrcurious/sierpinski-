@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sierpiński / Recursive Crease Lift</title>
+<style>
+:root{color-scheme:dark;--bg:#080e14;--panel:#111d28;--panel2:#0b151e;--line:#263a49;--text:#e8f1f5;--muted:#8ea4b3;--cyan:#67dbe5;--gold:#efb85f;--green:#8fe0b5}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,input{font:inherit}
+.app{height:100%;display:flex;flex-direction:column;min-height:0}header{height:60px;flex:0 0 60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:#0b121a}.brand{display:flex;align-items:center;gap:12px}.mark{width:27px;height:27px;border:1px solid #4d8291;border-radius:7px;position:relative;background:#112631}.mark:before{content:"";position:absolute;inset:5px;border:1px solid var(--cyan);transform:rotate(45deg)}.mark:after{content:"";position:absolute;left:6px;right:6px;top:12px;border-top:1px solid var(--gold)}h1{font-size:13px;letter-spacing:.15em;margin:0;font-weight:760}.subtitle{color:var(--muted);font-size:10px;letter-spacing:.06em;margin-top:2px}.topnote{font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:#a9bfcd}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 345px;gap:10px;padding:10px}.stage{position:relative;min-width:0;min-height:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 48% 43%,#192a37 0%,#0b141e 60%,#080d13 100%)}canvas{width:100%;height:100%;display:block;touch-action:none}.gl-error{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:22px;background:#141d28;color:#ffd5b1}.overlay{position:absolute;pointer-events:none}.tl{top:14px;left:16px}.tr{top:14px;right:16px;text-align:right}.bl{bottom:14px;left:16px}.br{bottom:14px;right:16px;text-align:right}.kicker{font-size:9px;text-transform:uppercase;letter-spacing:.17em;color:#8daabd}.stage-title{font-size:15px;font-weight:720;margin-top:3px}.stage-sub{font-size:10px;color:#91a7b8;margin-top:2px}.hint{font-size:10px;line-height:1.55;color:#8ba0af;text-shadow:0 1px 4px #000}.pill{display:inline-block;border:1px solid #385363;border-radius:18px;padding:5px 9px;background:#0a141dcc;color:#bcd2df;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.live{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:9px;letter-spacing:.14em}.live:before{content:"";width:6px;height:6px;border-radius:50%;background:#71d9a7;box-shadow:0 0 8px #71d9a7}
+aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:9px;padding-right:2px}.panel{background:linear-gradient(180deg,#121f2b,#0e1821);border:1px solid var(--line);border-radius:10px;padding:12px}.panel h2{font-size:10px;color:#9bb0bf;text-transform:uppercase;letter-spacing:.15em;margin:0 0 10px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.metric{border:1px solid #243746;background:#0b141d;border-radius:7px;padding:8px}.metric .v{font-size:18px;font-variant-numeric:tabular-nums;letter-spacing:-.04em;overflow:hidden;text-overflow:ellipsis}.metric .l{font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:#8399a9;margin-top:2px}.controls{display:grid;gap:10px}.button-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.btn{border:1px solid #314858;background:#162532;color:#dce9ef;border-radius:7px;padding:8px 7px;font-size:10px;font-weight:700;letter-spacing:.05em;cursor:pointer}.btn:hover{background:#1b3443;border-color:#4c8190}.btn.primary{background:#173b48;border-color:#438697;color:#d1f7f7}.btn.active{border-color:var(--gold);color:#ffdda4}.btn:disabled{opacity:.35;cursor:default}.control{display:grid;gap:5px}.control-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.control label,.control-head label{font-size:10px;color:#c3d2dc}.readout{font-size:10px;color:var(--cyan);font-variant-numeric:tabular-nums}.range{width:100%;accent-color:var(--cyan)}.small{font-size:9px;color:#879dac;line-height:1.55}.toggles{display:flex;gap:7px;flex-wrap:wrap}.toggle{display:inline-flex;align-items:center;gap:5px;border:1px solid #2b4050;border-radius:6px;padding:5px 7px;font-size:9px;color:#b3c4ce}.toggle input{accent-color:var(--cyan);margin:0}.equation{font:10px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#d1e8ed;background:#09131b;border-left:2px solid #4c9ba8;padding:8px}.codebox{font:10px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;color:#c0dfe3;background:#09131b;border:1px solid #243746;border-radius:6px;padding:8px;min-height:34px}.qa{font-size:9px;color:var(--green)}footer{height:25px;flex:0 0 25px;border-top:1px solid #1c2a37;color:#748b9a;font-size:9px;padding:4px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(290px,1fr) auto;overflow:auto}.stage{min-height:48vh}aside{display:grid;grid-template-columns:1fr 1fr;overflow:visible}.panel{min-width:0}}
+@media(max-width:600px){header{height:54px;flex-basis:54px;padding:0 11px}.topnote{display:none}main{padding:7px;gap:7px;grid-template-rows:minmax(290px,44vh) auto}.stage{min-height:290px}aside{grid-template-columns:1fr}.panel{padding:10px}.tl{top:9px;left:10px}.tr{top:9px;right:10px}.bl{bottom:9px;left:10px}.br{bottom:9px;right:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>SIERPIŃSKI / RECURSIVE CREASE LIFT</h1><div class="subtitle">Square-filling binary triangle recursion · spatially folded at every bisection</div></div></div>
+  <div class="topnote">XY invariant · Z recursively generated</div>
+</header>
+<main>
+  <section class="stage">
+    <canvas id="glcanvas" aria-label="Interactive recursive 3D lift of the square Sierpinski curve"></canvas>
+    <div class="gl-error" id="glerror">This demonstration requires WebGL 2.0.</div>
+    <div class="overlay tl"><div class="kicker">Recursive geometric lift</div><div class="stage-title">Square Sierpiński curve · crease embedding</div><div class="stage-sub" id="stageSub">Two triangular halves · order 8 · fold amplitude 0.22</div></div>
+    <div class="overlay tr"><div class="live" id="liveState">RECURSIVE PATH</div><div class="stage-sub" id="stepInfo">Next child: —</div></div>
+    <div class="overlay bl"><span class="pill" id="cellPill">ROOT SQUARE · TWO TRIANGLES</span></div>
+    <div class="overlay br"><div class="hint">DRAG · ORBIT &nbsp; / &nbsp; WHEEL · ENTER CELL<br>SHIFT + WHEEL · CAMERA DISTANCE &nbsp; / &nbsp; SPACE · AUTO</div></div>
+  </section>
+  <aside>
+    <section class="panel">
+      <h2>Recursive state</h2>
+      <div class="metrics">
+        <div class="metric"><div class="v" id="orderValue">8</div><div class="l">Local detail order</div></div>
+        <div class="metric"><div class="v" id="globalOrderValue">8</div><div class="l">Global order</div></div>
+        <div class="metric"><div class="v" id="cellCount">256</div><div class="l">Local leaf triangles</div></div>
+        <div class="metric"><div class="v" id="vertexCount">511</div><div class="l">Path vertices</div></div>
+        <div class="metric"><div class="v" id="depthValue">0</div><div class="l">Address depth</div></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="small">A zoom step selects one actual recursive child. Global order = local detail order + address depth; it rises by one at every descent.</div>
+    </section>
+    <section class="panel">
+      <h2>3D subdivision rule</h2>
+      <div class="equation">mₓᵧ = (aₓᵧ + bₓᵧ) / 2<br>mᶻ = (aᶻ + bᶻ) / 2 + λ · ℓ · χ(θ)<br><br>χ(θ) = 0.72 sin(2θ) + 0.28 cos(2θ)<br><br>[a,b,c] → [a,c,m] · [c,b,m]</div>
+      <div class="small" style="margin-top:8px">Each split inserts one lifted midpoint on the tagged edge. Both children use that same 3D point and share the complete edge [c,m]. The two child facets are therefore joined, but are no longer coplanar with the parent. Z depends on the local recursive edge geometry, never on traversal time. The result is a 3D folded-surface embedding of the square-filling path, not a claim to fill a 3D volume.</div>
+    </section>
+    <section class="panel">
+      <h2>Construction controls</h2>
+      <div class="controls">
+        <div class="control">
+          <div class="control-head"><label for="order">Local recursion order</label><span class="readout" id="orderReadout">8</span></div>
+          <input class="range" type="range" id="order" min="1" max="19" step="1" value="8">
+          <div class="small">The GPU evaluates recursive triangle addresses directly; no exponentially growing CPU vertex buffer. The translucent facet preview is capped at order 9; the path itself uses the full selected order.</div>
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="fold">Fold amplitude λ</label><span class="readout" id="foldReadout">0.22</span></div>
+          <input class="range" type="range" id="fold" min="0" max="0.42" step="0.01" value="0.22">
+          <div class="small">Zero gives the original planar path. Increasing λ changes every recursive midpoint, not the path parameter.</div>
+        </div>
+        <div class="button-row"><button class="btn" id="backBtn">− STEP</button><button class="btn" id="autoBtn">AUTO</button><button class="btn primary" id="forwardBtn">+ STEP</button></div>
+        <div class="control">
+          <div class="control-head"><label for="parameter">Recursive address seed t</label><span class="readout" id="tReadout">0.314159</span></div>
+          <input class="range" type="range" min="0" max="999999" step="1" value="314159" id="parameter">
+          <div class="small">The binary expansion chooses the next child at each zoom step. The rational seed has an infinite periodic expansion unless it is dyadic.</div>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="surfaceToggle" checked> Folded facets</label>
+          <label class="toggle"><input type="checkbox" id="flatToggle"> Flat XY projection</label>
+          <label class="toggle"><input type="checkbox" id="outlineToggle" checked> XY outline</label>
+        </div>
+        <div class="button-row" style="grid-template-columns:1fr 1fr"><button class="btn" id="resetBtn">RESET ADDRESS</button><button class="btn" id="cameraBtn">RESET CAMERA</button></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Current recursive address</h2>
+      <div class="codebox" id="addressBox">ROOT</div>
+      <div class="small" id="remainingT" style="margin-top:7px">Remaining parameter: 0.314159</div>
+      <div class="small" id="simplexInfo" style="margin-top:6px">Root square = two right-isosceles triangles sharing the diagonal.</div>
+    </section>
+    <section class="panel">
+      <h2>Geometric audit</h2>
+      <div class="qa" id="qaText">Running recursive edge audit…</div>
+      <div class="small" style="margin-top:6px">Checks: XY area conservation, consecutive-cell shared edges, continuity of the lifted seam, and non-coplanar child facets.</div>
+    </section>
+  </aside>
+</main>
+<footer><span>Standalone WebGL2 · no libraries · BigInt recursive parameter</span><span>Recursive midpoint fold · planar Sierpiński traversal preserved in XY</span></footer>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id),canvas=$('glcanvas');
+const gl=canvas.getContext('webgl2',{antialias:true,alpha:true,depth:true,powerPreference:'high-performance'});
+if(!gl){$('glerror').style.display='grid';return;}
+window.addEventListener('error',e=>{const el=$('glerror');if(el){el.style.display='grid';el.textContent='WebGL / JavaScript error: '+(e.message||'unknown error');}});
+const MAX_ORDER=19,DEN=1000000n,MAX_HISTORY=512;
+const V=(x,y,z=0)=>[x,y,z],cloneCell=c=>c.map(p=>p.slice());
+const triA=[V(-1,-1),V(1,1),V(1,-1)];
+const triB=[V(1,1),V(-1,-1),V(-1,1)];
+let foldAmplitude=.22,localOrder=8,surface=true,flat=false,outline=true,auto=false,lastAuto=0;
+let camera={yaw:.78,pitch:.42,distance:3.65},pointer=null,wheelAccum=0;
+const average3=(a,b)=>[(a[0]+b[0])*.5,(a[1]+b[1])*.5,(a[2]+b[2])*.5];
+function foldSignature(a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy;if(l2<1e-18)return 0;return .72*(2*dx*dy/l2)+.28*((dx*dx-dy*dy)/l2);}
+function liftedMid(a,b,lambda=foldAmplitude){const m=average3(a,b),dx=b[0]-a[0],dy=b[1]-a[1],ell=Math.hypot(dx,dy);m[2]=.5*(a[2]+b[2])+lambda*ell*foldSignature(a,b);return m;}
+function triChild(cell,bit,lambda=foldAmplitude){const [a,b,c]=cell,m=liftedMid(a,b,lambda);return bit===0?[a.slice(),c.slice(),m]:[c.slice(),b.slice(),m];}
+function normalizeCell3D(cell){let cx=0,cy=0,cz=0;for(const p of cell){cx+=p[0]/3;cy+=p[1]/3;cz+=p[2]/3;}let longest=0;for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)longest=Math.max(longest,Math.hypot(cell[i][0]-cell[j][0],cell[i][1]-cell[j][1]));const s=2/(longest||1);return cell.map(p=>[(p[0]-cx)*s,(p[1]-cy)*s,(p[2]-cz)*s]);}
+let state={squareRoot:true,tri:cloneCell(triA),tN:314159n,tD:DEN,depth:0n,addressTail:'',history:[]};
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+function program(vs,fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,vs));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
+const vs=`#version 300 es
+precision highp float; precision highp int;
+uniform mat4 uVP; uniform int uOrder; uniform int uTwoHalves; uniform int uDrawMode; uniform int uFlat; uniform float uFold;
+uniform vec3 uA; uniform vec3 uB; uniform vec3 uC; uniform vec3 uA2; uniform vec3 uB2; uniform vec3 uC2;
+out float vHeight; flat out vec3 vNormal;
+struct Tri { vec3 a; vec3 b; vec3 c; };
+vec3 liftMid(vec3 a,vec3 b){vec2 d=b.xy-a.xy;float l2=dot(d,d);float s=l2>1e-18?(0.72*(2.0*d.x*d.y/l2)+0.28*((d.x*d.x-d.y*d.y)/l2)):0.0;return vec3(0.5*(a.xy+b.xy),0.5*(a.z+b.z)+uFold*sqrt(max(l2,0.0))*s);}
+Tri leaf(uint idx,vec3 a,vec3 b,vec3 c){for(int k=0;k<19;k++){if(k>=uOrder)break;uint bit=(idx>>uint(uOrder-1-k))&1u;vec3 m=liftMid(a,b);if(bit==0u){b=c;c=m;}else{a=c;c=m;}}Tri t;t.a=a;t.b=b;t.c=c;return t;}
+Tri cellAt(uint g){uint per=1u<<uint(uOrder);if(uTwoHalves==1&&g>=per)return leaf(g-per,uA2,uB2,uC2);return leaf(g,uA,uB,uC);}
+vec3 center(Tri t){return (t.a+t.b+t.c)/3.0;}
+vec3 seamMid(Tri p,Tri q){vec3 s0=vec3(0.0),s1=vec3(0.0);int n=0;for(int i=0;i<3;i++){vec3 a=i==0?p.a:(i==1?p.b:p.c);for(int j=0;j<3;j++){vec3 b=j==0?q.a:(j==1?q.b:q.c);vec3 diff=a-b;if(dot(diff,diff)<6.4e-9){if(n==0){s0=a;n=1;}else if(n==1){vec3 d0=a-s0;if(dot(d0,d0)>6.4e-9){s1=a;n=2;}}}}}if(n==2)return 0.5*(s0+s1);return 0.5*(center(p)+center(q));}
+void main(){uint per=1u<<uint(uOrder);uint cells=uTwoHalves==1?2u*per:per;uint id=uint(gl_VertexID);vec3 p;vNormal=vec3(0.0,0.0,1.0);
+ if(uDrawMode==0){if((id&1u)==0u){uint ci=id>>1u;Tri t=cellAt(ci);p=center(t);}else{uint ci=id>>1u;Tri a=cellAt(ci),b=cellAt(ci+1u);p=seamMid(a,b);}}
+ else{uint ci=id/3u;uint corner=id%3u;Tri t=cellAt(ci);p=corner==0u?t.a:(corner==1u?t.b:t.c);vNormal=normalize(cross(t.b-t.a,t.c-t.a));}
+ if(uFlat==1){p.z=0.0;vNormal=vec3(0.0,0.0,1.0);}vHeight=p.z;gl_Position=uVP*vec4(p,1.0);
+}`;
+const fs=`#version 300 es
+precision highp float; precision highp int;
+uniform highp int uDrawMode;
+in highp float vHeight;flat in highp vec3 vNormal;out highp vec4 outColor;
+void main(){if(uDrawMode==1){vec3 n=normalize(vNormal);vec3 light=normalize(vec3(-0.35,0.72,0.62));float d=0.35+0.65*abs(dot(n,light));float h=clamp(0.5+vHeight*0.42,0.0,1.0);vec3 c=mix(vec3(0.10,0.28,0.38),vec3(0.22,0.72,0.76),h);outColor=vec4(c*d,0.19);}else{float h=clamp(0.5+vHeight*0.5,0.0,1.0);vec3 c=mix(vec3(0.24,0.78,0.87),vec3(0.98,0.70,0.37),h);float glow=0.88+0.12*cos(vHeight*8.0);outColor=vec4(c*glow,0.98);}}`;
+const p=program(vs,fs),L={vp:gl.getUniformLocation(p,'uVP'),order:gl.getUniformLocation(p,'uOrder'),two:gl.getUniformLocation(p,'uTwoHalves'),draw:gl.getUniformLocation(p,'uDrawMode'),flat:gl.getUniformLocation(p,'uFlat'),fold:gl.getUniformLocation(p,'uFold'),A:gl.getUniformLocation(p,'uA'),B:gl.getUniformLocation(p,'uB'),C:gl.getUniformLocation(p,'uC'),A2:gl.getUniformLocation(p,'uA2'),B2:gl.getUniformLocation(p,'uB2'),C2:gl.getUniformLocation(p,'uC2')};
+const vao=gl.createVertexArray();gl.bindVertexArray(vao);gl.bindVertexArray(null);
+const lineVS=`#version 300 es
+precision highp float;uniform mat4 uVP;uniform int uFlat;in vec3 aPosition;void main(){vec3 p=aPosition;if(uFlat==1)p.z=0.0;gl_Position=uVP*vec4(p,1.0);}`;
+const lineFS=`#version 300 es
+precision highp float;uniform vec4 uColor;out vec4 outColor;void main(){outColor=uColor;}`;
+const lp=program(lineVS,lineFS),LL={vp:gl.getUniformLocation(lp,'uVP'),flat:gl.getUniformLocation(lp,'uFlat'),color:gl.getUniformLocation(lp,'uColor'),pos:gl.getAttribLocation(lp,'aPosition')};
+const lineVao=gl.createVertexArray(),lineBuffer=gl.createBuffer();gl.bindVertexArray(lineVao);gl.bindBuffer(gl.ARRAY_BUFFER,lineBuffer);gl.bufferData(gl.ARRAY_BUFFER,64*4,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(LL.pos);gl.vertexAttribPointer(LL.pos,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+function perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far),o=new Float32Array(16);o[0]=f/aspect;o[5]=f;o[10]=(far+near)*nf;o[11]=-1;o[14]=2*far*near*nf;return o;}
+function lookAt(eye,center,up){let zx=eye[0]-center[0],zy=eye[1]-center[1],zz=eye[2]-center[2],l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;let xx=up[1]*zz-up[2]*zy,xy=up[2]*zx-up[0]*zz,xz=up[0]*zy-up[1]*zx;l=Math.hypot(xx,xy,xz)||1;xx/=l;xy/=l;xz/=l;const yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;const o=new Float32Array(16);o[0]=xx;o[1]=yx;o[2]=zx;o[4]=xy;o[5]=yy;o[6]=zy;o[8]=xz;o[9]=yz;o[10]=zz;o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);o[15]=1;return o;}
+function mult(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+function vp(){const aspect=canvas.width/Math.max(canvas.height,1),cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch),sy=Math.sin(camera.yaw),cy=Math.cos(camera.yaw),d=camera.distance;const eye=[d*cp*sy,d*sp,d*cp*cy];return mult(perspective(Math.PI/4,aspect,.01,100),lookAt(eye,[0,0,0],[0,1,0]));}
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
+function setCurveUniforms(order,two,drawMode,matrix){gl.uniform1i(L.order,order);gl.uniform1i(L.two,two?1:0);gl.uniform1i(L.draw,drawMode);gl.uniform1i(L.flat,flat?1:0);gl.uniform1f(L.fold,foldAmplitude);gl.uniform3fv(L.A,matrix[0]);gl.uniform3fv(L.B,matrix[1]);gl.uniform3fv(L.C,matrix[2]);gl.uniform3fv(L.A2,triB[0]);gl.uniform3fv(L.B2,triB[1]);gl.uniform3fv(L.C2,triB[2]);}
+function lineSegments(){const out=[];const push=(a,b)=>out.push(...a,...b);if(state.squareRoot){const q=[V(-1,-1),V(1,-1),V(1,1),V(-1,1)];for(let i=0;i<4;i++)push(q[i],q[(i+1)%4]);push(triA[0],triA[1]);}else{const c=state.tri;push(c[0],c[1]);push(c[1],c[2]);push(c[2],c[0]);}return new Float32Array(out);}
+function drawLines(vpm){if(!outline||!flat)return;const data=lineSegments();gl.useProgram(lp);gl.uniformMatrix4fv(LL.vp,false,vpm);gl.uniform1i(LL.flat,flat?1:0);gl.bindBuffer(gl.ARRAY_BUFFER,lineBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);gl.uniform4f(LL.color,.24,.49,.59,.65);gl.bindVertexArray(lineVao);gl.drawArrays(gl.LINES,0,data.length/3);gl.bindVertexArray(null);}
+function draw(){resize();gl.clearColor(.025,.045,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.CULL_FACE);const m=vp();const two=state.squareRoot;const renderOrder=localOrder-(two?1:0);const rootCell=two?triA:state.tri;
+ gl.useProgram(p);gl.uniformMatrix4fv(L.vp,false,m);gl.bindVertexArray(vao);
+ if(surface){const meshOrder=Math.min(renderOrder,9),per=2**meshOrder,cells=two?2*per:per;setCurveUniforms(meshOrder,two,1,rootCell);gl.depthMask(false);gl.drawArrays(gl.TRIANGLES,0,cells*3);gl.depthMask(true);}
+ drawLines(m);
+ gl.useProgram(p);gl.uniformMatrix4fv(L.vp,false,m);gl.bindVertexArray(vao);
+ const per=2**renderOrder,cells=two?2*per:per,pathVertices=2*cells-1;setCurveUniforms(renderOrder,two,0,rootCell);gl.drawArrays(gl.LINE_STRIP,0,pathVertices);gl.bindVertexArray(null);
+}
+function snapshot(){return{squareRoot:state.squareRoot,tri:cloneCell(state.tri),tN:state.tN,tD:state.tD,depth:state.depth,addressTail:state.addressTail};}
+function restore(s){state.squareRoot=s.squareRoot;state.tri=cloneCell(s.tri);state.tN=s.tN;state.tD=s.tD;state.depth=s.depth;state.addressTail=s.addressTail;}
+function nextBit(){const twice=state.tN*2n;if(twice<state.tD){state.tN=twice;return 0;}state.tN=twice-state.tD;return 1;}
+function pushHistory(){if(state.history.length>=MAX_HISTORY)state.history.shift();state.history.push(snapshot());}
+function stepIn(){pushHistory();const bit=nextBit();if(state.squareRoot){state.tri=normalizeCell3D(cloneCell(bit===0?triA:triB));state.squareRoot=false;}else state.tri=normalizeCell3D(triChild(state.tri,bit));state.addressTail=(state.addressTail+bit).slice(-64);state.depth+=1n;updateUI();draw();}
+function stepOut(){if(!state.history.length)return;restore(state.history.pop());updateUI();draw();}
+function setAuto(v){auto=v;if(v)lastAuto=performance.now();$('autoBtn').classList.toggle('active',v);$('autoBtn').textContent=v?'PAUSE':'AUTO';$('liveState').textContent=v?'AUTO DESCENT':'RECURSIVE PATH';}
+function resetAddress(){state.squareRoot=true;state.tri=cloneCell(triA);state.depth=0n;state.addressTail='';state.tN=BigInt($('parameter').value);state.tD=DEN;state.history=[];setAuto(false);updateUI();draw();}
+function fmtBig(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function updateUI(){const renderOrder=localOrder-(state.squareRoot?1:0),per=2n**BigInt(renderOrder),cells=state.squareRoot?2n*per:per,path=2n*cells-1n,global=BigInt(localOrder)+state.depth;$('orderValue').textContent=localOrder;$('orderReadout').textContent=localOrder;$('globalOrderValue').textContent=fmtBig(global);$('depthValue').textContent=fmtBig(state.depth);$('cellCount').textContent=fmtBig(cells);$('vertexCount').textContent=fmtBig(path);$('foldReadout').textContent=foldAmplitude.toFixed(2);$('fold').value=foldAmplitude;$('order').value=localOrder;$('addressBox').textContent=state.addressTail?(state.depth>64n?'…':'')+state.addressTail:'ROOT';const t=Number(state.tN)/Number(state.tD);$('tReadout').textContent=t.toFixed(6);$('remainingT').textContent='Current residual parameter: '+t.toFixed(9);$('stepInfo').textContent='Next child: '+(2n*state.tN<state.tD?'0 · left':'1 · right');$('cellPill').textContent=state.squareRoot?'ROOT SQUARE · TWO TRIANGLES':'NESTED TRIANGLE · DEPTH '+fmtBig(state.depth);$('simplexInfo').textContent=state.squareRoot?'Root square is partitioned into two oppositely oriented right-isosceles triangles.':'Current cell: normalized 3D triangle. Its XY projection is the exact nested planar child; Z stores accumulated recursive folds.';$('stageSub').textContent='Local order '+localOrder+' · global order '+fmtBig(global)+' · λ '+foldAmplitude.toFixed(2);$('backBtn').disabled=!state.history.length;}
+function audit(order){function leaves(cell,n){if(n===0)return[cell];return leaves(triChild(cell,0,.22),n-1).concat(leaves(triChild(cell,1,.22),n-1));}const cells=leaves(triA,order).concat(leaves(triB,order));let area=0,minShared=3,maxZ=-Infinity,minZ=Infinity,nonPlanar=false;for(const c of cells){const [a,b,d]=c;area+=Math.abs((b[0]-a[0])*(d[1]-a[1])-(b[1]-a[1])*(d[0]-a[0]))*.5;for(const p of c){maxZ=Math.max(maxZ,p[2]);minZ=Math.min(minZ,p[2]);}}for(let i=0;i<cells.length-1;i++){let n=0;for(const a of cells[i])for(const b of cells[i+1])if(Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])<1e-7){n++;break;}minShared=Math.min(minShared,n);}const a=triA,b=triB,m=liftedMid(a[0],a[1],.22),child0=[a[0],a[2],m],child1=[a[2],a[1],m];const n0=cross3(sub3(child0[1],child0[0]),sub3(child0[2],child0[0])),n1=cross3(sub3(child1[1],child1[0]),sub3(child1[2],child1[0]));nonPlanar=Math.abs(dot3(n0,n1)/(len3(n0)*len3(n1)))<.99999;return{area,minShared,nonPlanar,zRange:maxZ-minZ};}
+function sub3(a,b){return a.map((v,i)=>v-b[i]);}function cross3(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}function dot3(a,b){return a.reduce((s,v,i)=>s+v*b[i],0);}function len3(a){return Math.hypot(...a);}
+let auditStatus='';try{const q=audit(7);auditStatus=(Math.abs(q.area-4)<1e-7&&q.minShared===2&&q.nonPlanar)?'PASS · order 7: projected area 4, every consecutive pair shares a lifted edge, child facets are non-coplanar':'WARNING · geometric audit found a mismatch';}catch(e){auditStatus='AUDIT ERROR · '+e.message;}$('qaText').textContent=auditStatus;
+function tick(now){if(auto&&now-lastAuto>520){stepIn();lastAuto=now;}requestAnimationFrame(tick);}requestAnimationFrame(tick);
+$('order').addEventListener('input',e=>{localOrder=Math.max(1,Math.min(MAX_ORDER,Number(e.target.value)|0));updateUI();draw();});$('fold').addEventListener('input',e=>{foldAmplitude=Number(e.target.value);resetAddress();});$('parameter').addEventListener('input',()=>resetAddress());$('forwardBtn').addEventListener('click',stepIn);$('backBtn').addEventListener('click',stepOut);$('autoBtn').addEventListener('click',()=>setAuto(!auto));$('resetBtn').addEventListener('click',resetAddress);$('cameraBtn').addEventListener('click',()=>{camera={yaw:.78,pitch:.42,distance:3.65};draw();});$('surfaceToggle').addEventListener('change',e=>{surface=e.target.checked;draw();});$('flatToggle').addEventListener('change',e=>{flat=e.target.checked;draw();});$('outlineToggle').addEventListener('change',e=>{outline=e.target.checked;draw();});
+canvas.addEventListener('pointerdown',e=>{pointer={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!pointer)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer={x:e.clientX,y:e.clientY};camera.yaw+=dx*.008;camera.pitch=Math.max(-1.35,Math.min(1.35,camera.pitch+dy*.008));draw();});canvas.addEventListener('pointerup',()=>pointer=null);canvas.addEventListener('pointercancel',()=>pointer=null);canvas.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.distance=Math.max(1.7,Math.min(14,camera.distance*Math.exp(e.deltaY*.001)));draw();return;}wheelAccum+=e.deltaY;if(Math.abs(wheelAccum)>80){if(wheelAccum>0)stepIn();else stepOut();wheelAccum=0;}},{passive:false});window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();setAuto(!auto);}else if(e.key==='ArrowRight')stepIn();else if(e.key==='ArrowLeft')stepOut();else if(e.key==='Escape')resetAddress();});window.addEventListener('resize',()=>{resize();draw();});
+updateUI();draw();
+})();
+</script>
+</body>
+</html>
