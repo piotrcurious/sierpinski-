@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sierpiński — tagged-edge recursive space-filling curve</title>
+<style>
+:root{color-scheme:dark;--bg:#090e14;--panel:#111b26;--panel2:#0c151e;--line:#263746;--text:#e6eff5;--muted:#8ea3b4;--cyan:#68d7e5;--gold:#f3b95f;--green:#94e0b8}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,input,select{font:inherit}
+.app{height:100%;display:flex;flex-direction:column;min-height:0}header{height:62px;flex:0 0 62px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--line);background:#0b121a}.brand{display:flex;align-items:center;gap:12px}.mark{width:28px;height:28px;border:1px solid #4d8190;border-radius:7px;position:relative;background:#112431}.mark:before{content:"";position:absolute;inset:5px;border:1px solid var(--cyan);transform:rotate(45deg)}.mark:after{content:"";position:absolute;left:6px;right:6px;top:13px;border-top:1px solid var(--gold)}h1{font-size:13px;letter-spacing:.16em;margin:0;font-weight:750}.subtitle{color:var(--muted);font-size:10px;letter-spacing:.06em;margin-top:2px}.topnote{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#a9bfcd}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:11px;padding:11px}.stage{position:relative;min-width:0;min-height:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 48% 43%,#172635 0%,#0b131d 58%,#080d13 100%)}canvas{width:100%;height:100%;display:block;touch-action:none}.gl-error{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:22px;background:#141d28;color:#ffd5b1}.overlay{position:absolute;pointer-events:none}.tl{top:14px;left:16px}.tr{top:14px;right:16px;text-align:right}.bl{bottom:14px;left:16px}.br{bottom:14px;right:16px;text-align:right}.kicker{font-size:9px;text-transform:uppercase;letter-spacing:.17em;color:#8daabd}.stage-title{font-size:15px;font-weight:700;margin-top:3px}.stage-sub{font-size:10px;color:#91a7b8;margin-top:2px}.hint{font-size:10px;line-height:1.55;color:#8ba0af;text-shadow:0 1px 4px #000}.pill{display:inline-block;border:1px solid #385363;border-radius:18px;padding:5px 9px;background:#0a141dcc;color:#bcd2df;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.live{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:9px;letter-spacing:.14em}.live:before{content:"";width:6px;height:6px;border-radius:50%;background:#71d9a7;box-shadow:0 0 8px #71d9a7}
+aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:9px;padding-right:2px}.panel{background:linear-gradient(180deg,#121e2a,#0e1721);border:1px solid var(--line);border-radius:10px;padding:13px}.panel h2{font-size:10px;color:#9bb0bf;text-transform:uppercase;letter-spacing:.15em;margin:0 0 11px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.metric{border:1px solid #243746;background:#0b141d;border-radius:7px;padding:8px}.metric .v{font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.metric .l{font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:#8399a9;margin-top:2px}.controls{display:grid;gap:10px}.button-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.btn{border:1px solid #314858;background:#162532;color:#dce9ef;border-radius:7px;padding:8px 7px;font-size:10px;font-weight:700;letter-spacing:.05em;cursor:pointer}.btn:hover{background:#1b3443;border-color:#4c8190}.btn.primary{background:#173b48;border-color:#438697;color:#d1f7f7}.btn.active{border-color:var(--gold);color:#ffdda4}.btn:disabled{opacity:.35;cursor:default}.control{display:grid;gap:5px}.control-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.control label,.control-head label{font-size:10px;color:#c3d2dc}.readout{font-size:10px;color:var(--cyan);font-variant-numeric:tabular-nums}.range{width:100%;accent-color:var(--cyan)}select{width:100%;background:#0b141d;color:#e3edf2;border:1px solid #334a5a;border-radius:6px;padding:7px 8px}.small{font-size:9px;color:#879dac;line-height:1.55}.toggles{display:flex;gap:7px;flex-wrap:wrap}.toggle{display:inline-flex;align-items:center;gap:5px;border:1px solid #2b4050;border-radius:6px;padding:5px 7px;font-size:9px;color:#b3c4ce}.toggle input{accent-color:var(--cyan);margin:0}.equation{font:10px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#d1e8ed;background:#09131b;border-left:2px solid #4c9ba8;padding:8px}.codebox{font:10px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;color:#c0dfe3;background:#09131b;border:1px solid #243746;border-radius:6px;padding:8px;min-height:34px}.qa{font-size:9px;color:var(--green)}footer{height:26px;flex:0 0 26px;border-top:1px solid #1c2a37;color:#748b9a;font-size:9px;padding:4px 15px;display:flex;justify-content:space-between;gap:12px;align-items:center}footer a{color:#8fcbd4;text-decoration:none}
+@media(max-width:850px){main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(280px,1fr) auto;overflow:auto}.stage{min-height:45vh}aside{display:grid;grid-template-columns:1fr 1fr;overflow:visible}.panel{min-width:0}}
+@media(max-width:560px){header{height:55px;flex-basis:55px;padding:0 12px}.topnote{display:none}main{padding:7px;gap:7px;grid-template-rows:minmax(280px,46vh) auto}.stage{min-height:280px}aside{grid-template-columns:1fr}.panel{padding:11px}.tl{top:9px;left:10px}.tr{top:9px;right:10px}.bl{bottom:9px;left:10px}.br{bottom:9px;right:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>SIERPIŃSKI / TAGGED-EDGE RECURSION</h1><div class="subtitle">Square-filling Sierpiński–Knopp curve · tetrahedral 3D generalization</div></div></div>
+  <div class="topnote">No cube grid · 2-child recursion</div>
+</header>
+<main>
+  <section class="stage" id="stage">
+    <canvas id="glcanvas" aria-label="Interactive Sierpinski space-filling curve"></canvas>
+    <div class="gl-error" id="glerror">This demonstration requires WebGL 2.0.</div>
+    <div class="overlay tl"><div class="kicker" id="viewKicker">Canonical square-filling curve</div><div class="stage-title" id="stageTitle">Sierpiński–Knopp · two triangular halves</div><div class="stage-sub" id="stageSub">Tagged hypotenuse bisection · recursive order</div></div>
+    <div class="overlay tr"><div class="live" id="liveState">RECURSIVE PATH</div><div class="stage-sub" id="stepInfo">Next branch: —</div></div>
+    <div class="overlay bl"><span class="pill" id="cellPill">ROOT DOMAIN · SQUARE</span></div>
+    <div class="overlay br"><div class="hint">DRAG · ORBIT &nbsp; / &nbsp; WHEEL · ENTER/LEAVE CELL<br>SHIFT + WHEEL · CAMERA DISTANCE</div></div>
+  </section>
+  <aside>
+    <section class="panel">
+      <h2>Curve state</h2>
+      <div class="metrics">
+        <div class="metric"><div class="v" id="orderValue">8</div><div class="l">Local order</div></div>
+        <div class="metric"><div class="v" id="depthValue">0</div><div class="l">Zoom depth</div></div>
+        <div class="metric"><div class="v" id="cellCount">512</div><div class="l">Leaf cells</div></div>
+        <div class="metric"><div class="v" id="vertexCount">512</div><div class="l">Path vertices</div></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="small" id="countNote">Each increase in order doubles the number of triangular cells in each half. The square is the union of two oppositely oriented Sierpiński–Knopp triangles.</div>
+    </section>
+    <section class="panel">
+      <h2>Construction</h2>
+      <div class="control">
+        <div class="control-head"><label for="mode">Mathematical domain</label><span class="readout" id="modeReadout">2D square</span></div>
+        <select id="mode"><option value="square">2D · square Sierpiński curve</option><option value="tetra">3D · tetrahedral Sierpiński curve</option></select>
+        <div class="small" id="modeNote">The square is cut along a diagonal into two right-isosceles triangles. Each half follows the same tagged-edge recursion in opposite directions.</div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="control">
+        <div class="control-head"><label for="order">Local recursion order</label><span class="readout" id="orderReadout">8</span></div>
+        <input class="range" type="range" id="order" min="1" max="19" step="1" value="8">
+        <div class="small">Order controls actual recursive bisection depth, not a mesh density or camera setting.</div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Navigate the recursive address</h2>
+      <div class="controls">
+        <div class="button-row"><button class="btn" id="backBtn">− STEP</button><button class="btn" id="autoBtn">AUTO</button><button class="btn primary" id="forwardBtn">+ STEP</button></div>
+        <div class="control">
+          <div class="control-head"><label for="parameter">Curve parameter t</label><span class="readout" id="tReadout">0.314159</span></div>
+          <input class="range" type="range" min="0" max="999999" step="1" value="314159" id="parameter">
+          <div class="small">Each zoom step consumes the next binary address digit and selects the corresponding nested triangle or tetrahedron.</div>
+        </div>
+        <div class="toggles"><label class="toggle"><input type="checkbox" id="scaffoldToggle" checked> Simplex outline</label></div>
+        <div class="button-row" style="grid-template-columns:1fr 1fr"><button class="btn" id="resetBtn">RESET ADDRESS</button><button class="btn" id="cameraBtn">RESET CAMERA</button></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Nested cell address</h2>
+      <div class="codebox" id="addressBox">ROOT</div>
+      <div style="height:6px"></div>
+      <div class="small" id="remainingT">Remaining parameter: 0.314159</div>
+      <div style="height:6px"></div>
+      <div class="small" id="simplexInfo">Root domain: square = two tagged right triangles.</div>
+    </section>
+    <section class="panel">
+      <h2>Subdivision rule / audit</h2>
+      <div class="equation" id="ruleBox">2D: [a,b,c] → [a,c,m], [c,b,m]<br>m = (a+b)/2<br>Path point = child-triangle centroid</div>
+      <div style="height:8px"></div>
+      <div class="qa" id="qaText">Checking recursive adjacency…</div>
+      <div style="height:6px"></div>
+      <div class="small" id="limitNote">The 3D variant bisects a tagged tetrahedral edge into two tetrahedra. The tetrahedra distort under refinement; this is a known property of the construction, not a cube-grid approximation.</div>
+    </section>
+  </aside>
+</main>
+<footer><span>Finite polygonal approximations of a recursive interval-to-domain mapping · GPU evaluates every selected leaf cell</span><span>Construction: <a href="https://doi.org/10.1007/978-3-642-31046-1_6" target="_blank" rel="noopener">Bader, Space-Filling Curves (2013), ch. 6 & 8</a></span></footer>
+</div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('glcanvas');
+const gl = canvas.getContext('webgl2',{antialias:true,alpha:true,depth:true,powerPreference:'high-performance'});
+if(!gl){$('glerror').style.display='grid';return;}
+window.addEventListener('error',e=>{$('glerror').style.display='grid';$('glerror').textContent='WebGL / JavaScript error: '+(e.message||'unknown error');});
+const MAX_ORDER=19, DEN=1000000n;
+const SQRT3=Math.sqrt(3), SQRT23=Math.sqrt(2/3);
+const vec=(x,y,z=0)=>[x,y,z];
+const cloneCell=c=>c.map(p=>p.slice());
+const mix=(a,b)=>a.map((x,i)=>(x+b[i])*0.5);
+const avg=pts=>pts[0].map((_,i)=>pts.reduce((s,p)=>s+p[i],0)/pts.length);
+function normalizeSimplex(cell){
+  const c=avg(cell);let r=0;
+  for(const p of cell){const d=Math.hypot(p[0]-c[0],p[1]-c[1],p[2]-c[2]);if(d>r)r=d;}
+  return cell.map(p=>p.map((x,i)=>(x-c[i])/(r||1)));
+}
+const triA=[vec(-1,-1),vec(1,1),vec(1,-1)];
+const triB=[vec(1,1),vec(-1,-1),vec(-1,1)];
+const rootTet=normalizeSimplex([vec(0,0,0),vec(1,0,0),vec(.5,SQRT3/2,0),vec(.5,SQRT3/6,SQRT23)]);
+function triChild(cell,bit){const [a,b,c]=cell,m=mix(a,b);return bit===0?[a,c,m]:[c,b,m];}
+function tetraChild(cell,bit){const [a,b,c,d]=cell,m=mix(a,b);return bit===0?[a,c,d,m]:[c,b,d,m];}
+let state={mode:'square',squareRoot:true,tri:cloneCell(triA),tet:cloneCell(rootTet),tN:314159n,tD:DEN,depth:0n,address:'',history:[]};
+let localOrder=8,scaffold=true,auto=false,lastAuto=0,auditStatus='Reference audit pending';
+let camera={yaw:0,pitch:0,distance:3.5};let pointer=null,wheelAccum=0;
+
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+function makeProgram(vs,fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,vs));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
+const curveProgram=makeProgram(`#version 300 es
+precision highp float; precision highp int;
+uniform mat4 uVP; uniform int uMode; uniform int uOrder; uniform int uSquareRoot;
+uniform vec3 uA; uniform vec3 uB; uniform vec3 uC; uniform vec3 uD;
+uniform vec3 uA2; uniform vec3 uB2; uniform vec3 uC2;
+uniform int uVertexCount;
+out float vT; out float vZ;
+vec3 trianglePoint(uint idx, vec3 a, vec3 b, vec3 c){
+  for(int k=0;k<19;++k){
+    if(k>=uOrder) break;
+    uint bit=(idx >> uint(uOrder-1-k)) & 1u;
+    vec3 m=0.5*(a+b);
+    if(bit==0u){ b=c; c=m; } else { a=c; c=m; }
+  }
+  return (a+b+c)/3.0;
+}
+vec3 tetraPoint(uint idx, vec3 a, vec3 b, vec3 c, vec3 d){
+  for(int k=0;k<19;++k){
+    if(k>=uOrder) break;
+    uint bit=(idx >> uint(uOrder-1-k)) & 1u;
+    vec3 m=0.5*(a+b);
+    if(bit==0u){ b=c; c=d; d=m; } else { a=c; c=d; d=m; }
+  }
+  return (a+b+c+d)*0.25;
+}
+void main(){
+  uint id=uint(gl_VertexID); vec3 p;
+  if(uMode==1){ p=tetraPoint(id,uA,uB,uC,uD); }
+  else {
+    uint per=1u << uint(uOrder);
+    if(uSquareRoot==1 && id>=per) p=trianglePoint(id-per,uA2,uB2,uC2);
+    else p=trianglePoint(id,uA,uB,uC);
+  }
+  gl_Position=uVP*vec4(p,1.0);
+  vT=float(id)/float(max(uVertexCount-1,1)); vZ=p.z;
+}`,`#version 300 es
+precision highp float; in float vT; in float vZ; out vec4 outColor;
+void main(){
+  float t=clamp(vT,0.0,1.0);
+  vec3 a=vec3(0.20,0.78,0.88), b=vec3(0.95,0.73,0.39), c=vec3(0.63,0.53,0.90);
+  vec3 col=mix(a,b,smoothstep(0.05,0.72,t));
+  col=mix(col,c,0.18*smoothstep(0.1,0.95,t));
+  float glow=0.84+0.16*(0.5+0.5*sin(t*6.2831853));
+  outColor=vec4(col*glow,0.96);
+}`);
+const scaffoldProgram=makeProgram(`#version 300 es
+precision highp float; uniform mat4 uVP; in vec3 aPosition; void main(){gl_Position=uVP*vec4(aPosition,1.0);}`,`#version 300 es
+precision highp float; uniform vec4 uColor; out vec4 outColor; void main(){outColor=uColor;}`);
+const curveLoc={vp:gl.getUniformLocation(curveProgram,'uVP'),mode:gl.getUniformLocation(curveProgram,'uMode'),order:gl.getUniformLocation(curveProgram,'uOrder'),square:gl.getUniformLocation(curveProgram,'uSquareRoot'),A:gl.getUniformLocation(curveProgram,'uA'),B:gl.getUniformLocation(curveProgram,'uB'),C:gl.getUniformLocation(curveProgram,'uC'),D:gl.getUniformLocation(curveProgram,'uD'),A2:gl.getUniformLocation(curveProgram,'uA2'),B2:gl.getUniformLocation(curveProgram,'uB2'),C2:gl.getUniformLocation(curveProgram,'uC2'),count:gl.getUniformLocation(curveProgram,'uVertexCount')};
+const scaffoldLoc={vp:gl.getUniformLocation(scaffoldProgram,'uVP'),color:gl.getUniformLocation(scaffoldProgram,'uColor'),pos:gl.getAttribLocation(scaffoldProgram,'aPosition')};
+const curveVao=gl.createVertexArray();gl.bindVertexArray(curveVao);gl.bindVertexArray(null);
+const scaffoldVao=gl.createVertexArray(),scaffoldBuffer=gl.createBuffer();gl.bindVertexArray(scaffoldVao);gl.bindBuffer(gl.ARRAY_BUFFER,scaffoldBuffer);gl.bufferData(gl.ARRAY_BUFFER,4*3*4,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(scaffoldLoc.pos);gl.vertexAttribPointer(scaffoldLoc.pos,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+
+function perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far),o=new Float32Array(16);o[0]=f/aspect;o[5]=f;o[10]=(far+near)*nf;o[11]=-1;o[14]=2*far*near*nf;return o;}
+function lookAt(eye,center,up){let zx=eye[0]-center[0],zy=eye[1]-center[1],zz=eye[2]-center[2],l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;let xx=up[1]*zz-up[2]*zy,xy=up[2]*zx-up[0]*zz,xz=up[0]*zy-up[1]*zx;l=Math.hypot(xx,xy,xz)||1;xx/=l;xy/=l;xz/=l;const yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;const o=new Float32Array(16);o[0]=xx;o[1]=yx;o[2]=zx;o[4]=xy;o[5]=yy;o[6]=zy;o[8]=xz;o[9]=yz;o[10]=zz;o[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);o[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);o[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);o[15]=1;return o;}
+function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+function viewProjection(){const aspect=canvas.width/Math.max(canvas.height,1),cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch),sy=Math.sin(camera.yaw),cy=Math.cos(camera.yaw),d=camera.distance;const eye=[d*cp*sy,d*sp,d*cp*cy];return multiply(perspective(Math.PI/4,aspect,.01,100),lookAt(eye,[0,0,0],[0,1,0]));}
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
+new ResizeObserver(()=>{resize();}).observe(canvas);window.addEventListener('resize',resize);resize();
+function lineData(){const out=[];const push=(a,b)=>out.push(...a,...b);if(state.mode==='tetra'){
+  const c=state.tet;for(const [i,j] of [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]])push(c[i],c[j]);
+}else if(state.squareRoot){const a=triA,b=triB;push(vec(-1,-1),vec(1,-1));push(vec(1,-1),vec(1,1));push(vec(1,1),vec(-1,1));push(vec(-1,1),vec(-1,-1));push(a[0],a[1]);}
+else {const c=state.tri;push(c[0],c[1]);push(c[1],c[2]);push(c[2],c[0]);}
+return new Float32Array(out);}
+function drawScaffold(vp){if(!scaffold)return;const data=lineData();if(!data.length)return;gl.useProgram(scaffoldProgram);gl.uniformMatrix4fv(scaffoldLoc.vp,false,vp);gl.uniform4f(scaffoldLoc.color,.25,.48,.60,.55);gl.bindBuffer(gl.ARRAY_BUFFER,scaffoldBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);gl.bindVertexArray(scaffoldVao);gl.drawArrays(gl.LINES,0,data.length/3);gl.bindVertexArray(null);
+  let tagged=null;if(state.mode==='tetra')tagged=[state.tet[0],state.tet[1]];else if(state.squareRoot)tagged=[triA[0],triA[1]];else tagged=[state.tri[0],state.tri[1]];
+  const td=new Float32Array([...tagged[0],...tagged[1]]);gl.bufferData(gl.ARRAY_BUFFER,td,gl.DYNAMIC_DRAW);gl.uniform4f(scaffoldLoc.color,.95,.68,.30,.95);gl.bindVertexArray(scaffoldVao);gl.drawArrays(gl.LINES,0,2);gl.bindVertexArray(null);
+}
+function draw(){resize();gl.clearColor(.025,.044,.065,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  const vp=viewProjection();drawScaffold(vp);
+  const per=2**localOrder,count=state.mode==='square'&&state.squareRoot?per*2:per;
+  gl.useProgram(curveProgram);gl.uniformMatrix4fv(curveLoc.vp,false,vp);gl.uniform1i(curveLoc.mode,state.mode==='tetra'?1:0);gl.uniform1i(curveLoc.order,localOrder);gl.uniform1i(curveLoc.square,state.squareRoot?1:0);gl.uniform1i(curveLoc.count,count);
+  const tri=state.tri,tet=state.tet;const A=state.mode==='square'?tri[0]:tet[0],B=state.mode==='square'?tri[1]:tet[1],C=state.mode==='square'?tri[2]:tet[2],D=state.mode==='tetra'?tet[3]:vec(0,0,0);
+  gl.uniform3fv(curveLoc.A,A);gl.uniform3fv(curveLoc.B,B);gl.uniform3fv(curveLoc.C,C);gl.uniform3fv(curveLoc.D,D);
+  gl.uniform3fv(curveLoc.A2,triB[0]);gl.uniform3fv(curveLoc.B2,triB[1]);gl.uniform3fv(curveLoc.C2,triB[2]);
+  gl.bindVertexArray(curveVao);gl.lineWidth(1.35);gl.drawArrays(gl.LINE_STRIP,0,count);gl.bindVertexArray(null);
+}
+function snapshot(){return {mode:state.mode,squareRoot:state.squareRoot,tri:cloneCell(state.tri),tet:cloneCell(state.tet),tN:state.tN,tD:state.tD,depth:state.depth,address:state.address};}
+function restore(s){state.mode=s.mode;state.squareRoot=s.squareRoot;state.tri=cloneCell(s.tri);state.tet=cloneCell(s.tet);state.tN=s.tN;state.tD=s.tD;state.depth=s.depth;state.address=s.address;}
+function nextBit(){const twice=state.tN*2n;if(twice<state.tD){state.tN=twice;return 0;}state.tN=twice-state.tD;return 1;}
+function stepIn(){state.history.push(snapshot());const bit=nextBit();if(state.mode==='square'){
+    if(state.squareRoot){state.tri=normalizeSimplex(cloneCell(bit===0?triA:triB));state.squareRoot=false;}
+    else state.tri=normalizeSimplex(triChild(state.tri,bit));
+  }else state.tet=normalizeSimplex(tetraChild(state.tet,bit));
+  state.address+=String(bit);state.depth+=1n;updateUI();draw();}
+function stepOut(){if(!state.history.length)return;const h=state.history.pop();restore(h);updateUI();draw();}
+function setAuto(v){auto=v;if(v)lastAuto=performance.now();$('autoBtn').classList.toggle('active',v);$('autoBtn').textContent=v?'PAUSE':'AUTO';$('liveState').textContent=v?'AUTO DESCENT':'RECURSIVE PATH';}
+function resetAddress(){state.squareRoot=state.mode==='square';state.tri=cloneCell(triA);state.tet=cloneCell(rootTet);state.depth=0n;state.address='';state.tN=BigInt($('parameter').value);state.tD=DEN;state.history=[];setAuto(false);updateUI();draw();}
+function setMode(mode){state.mode=mode;camera={yaw:mode==='square'?0:0.72,pitch:mode==='square'?0:0.46,distance:3.5};$('modeReadout').textContent=mode==='square'?'2D square':'3D tetra';$('viewKicker').textContent=mode==='square'?'Canonical square-filling curve':'Tetrahedral 3D generalization';$('stageTitle').textContent=mode==='square'?'Sierpiński–Knopp · two triangular halves':'3D Sierpiński · tagged tetrahedral bisection';$('stageSub').textContent=mode==='square'?'Oppositely oriented right triangles · order '+localOrder:'Two child tetrahedra · order '+localOrder;$('modeNote').textContent=mode==='square'?'The square is cut along a diagonal into two right-isosceles triangles. Each half follows the same tagged-edge recursion in opposite directions.':'The target is a tetrahedron, not a cube. Every tetrahedron is bisected at its oriented tagged edge into two tetrahedra sharing a triangular face.';$('ruleBox').innerHTML=mode==='square'?'2D: [a,b,c] → [a,c,m], [c,b,m]<br>m = (a+b)/2<br>Path point = child-triangle centroid':'3D: [a,b,c,d] → [a,c,d,m], [c,b,d,m]<br>m = (a+b)/2<br>Path point = child-tetrahedron centroid';$('countNote').textContent=mode==='square'?'Each increase in order doubles the number of triangular cells in each half. The square is the union of two oppositely oriented Sierpiński–Knopp triangles.':'Each increase in order doubles the number of tetrahedral cells. The cells share triangular faces in curve order; they are not congruent cube octants.';resetAddress();}
+function fmtBig(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function updateUI(){const per=2**localOrder,count=state.mode==='square'&&state.squareRoot?2*per:per,leaves=state.mode==='square'&&state.squareRoot?2*per:per;
+  $('orderValue').textContent=localOrder;$('orderReadout').textContent=localOrder;$('depthValue').textContent=fmtBig(state.depth);$('cellCount').textContent=fmtBig(leaves);$('vertexCount').textContent=fmtBig(count);
+  $('addressBox').textContent=state.address||'ROOT';$('cellPill').textContent=state.mode==='square'?(state.squareRoot?'ROOT DOMAIN · SQUARE':'NESTED TRIANGLE · '+fmtBig(state.depth)):'NESTED TETRAHEDRON · '+fmtBig(state.depth);
+  const t=Number(state.tN)/Number(state.tD);$('tReadout').textContent=t.toFixed(6);$('remainingT').textContent='Remaining parameter: '+t.toFixed(9);$('stepInfo').textContent='Next branch: '+(2n*state.tN<state.tD?'0 · first child':'1 · second child');
+  $('simplexInfo').textContent=state.mode==='square'?(state.squareRoot?'Root domain: two right-isosceles triangles sharing the diagonal.':'Current cell: tagged right-isosceles triangle; normalized view.'):(state.depth===0n?'Root domain: regular tetrahedron.':'Current cell: nested tetrahedron; uniformly normalized for viewing.');
+  $('qaText').textContent=auditStatus+' · '+(state.mode==='square'?'2-child triangle recursion · 2 halves × 2ⁿ cells':'2-child tetrahedral recursion · 2ⁿ tetrahedra');
+  $('order').value=localOrder;$('backBtn').disabled=!state.history.length;$('stageSub').textContent=state.mode==='square'?'Oppositely oriented right triangles · order '+localOrder:'Two child tetrahedra · order '+localOrder;
+}
+function tick(now){if(auto&&now-lastAuto>650){stepIn();lastAuto=now;}requestAnimationFrame(tick);}requestAnimationFrame(tick);
+$('mode').addEventListener('change',e=>setMode(e.target.value));$('order').addEventListener('input',e=>{localOrder=Math.max(1,Math.min(MAX_ORDER,Number(e.target.value)|0));$('orderReadout').textContent=localOrder;$('orderValue').textContent=localOrder;updateUI();draw();});$('parameter').addEventListener('input',e=>{state.tN=BigInt(e.target.value);state.tD=DEN;resetAddress();});$('forwardBtn').addEventListener('click',stepIn);$('backBtn').addEventListener('click',stepOut);$('autoBtn').addEventListener('click',()=>setAuto(!auto));$('resetBtn').addEventListener('click',resetAddress);$('cameraBtn').addEventListener('click',()=>{camera={yaw:state.mode==='square'?0:0.72,pitch:state.mode==='square'?0:0.46,distance:3.5};draw();});
+canvas.addEventListener('pointerdown',e=>{pointer={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!pointer)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer={x:e.clientX,y:e.clientY};camera.yaw+=dx*.008;camera.pitch=Math.max(-1.35,Math.min(1.35,camera.pitch+dy*.008));draw();});canvas.addEventListener('pointerup',()=>pointer=null);canvas.addEventListener('pointercancel',()=>pointer=null);
+canvas.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.distance=Math.max(1.8,Math.min(12,camera.distance*Math.exp(e.deltaY*.001)));draw();return;}wheelAccum+=e.deltaY;if(Math.abs(wheelAccum)>85){if(wheelAccum>0)stepIn();else stepOut();wheelAccum=0;}},{passive:false});
+$('scaffoldToggle')?.addEventListener('change',e=>{scaffold=e.target.checked;draw();});
+// A small CPU-side reference check: every adjacent tetrahedral leaf pair must share a triangular face.
+function auditTetra(order){const leaves=[];function rec(cell,n){if(n===0){leaves.push(cell);return;}const [a,b,c,d]=cell,m=mix(a,b);rec([a,c,d,m],n-1);rec([c,b,d,m],n-1);}rec(rootTet,order);let ok=true;for(let i=0;i+1<leaves.length;i++){let shared=0;for(const p of leaves[i])for(const q of leaves[i+1])if(Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])<1e-6){shared++;break;}if(shared<3){ok=false;break;}}return ok;}
+function auditTriangle(order){const leaves=[];function rec(cell,n){if(n===0){leaves.push(cell);return;}const [a,b,c]=cell,m=mix(a,b);rec([a,c,m],n-1);rec([c,b,m],n-1);}rec(triA,order);rec(triB,order);let ok=true;for(let i=0;i+1<leaves.length;i++){let shared=0;for(const p of leaves[i])for(const q of leaves[i+1])if(Math.hypot(p[0]-q[0],p[1]-q[1])<1e-6){shared++;break;}if(shared<2){ok=false;break;}}return ok;}
+try{auditStatus=(auditTriangle(6)&&auditTetra(6))?'Audit PASS · triangle leaves share edges; tetra leaves share faces through order 6':'Audit WARNING · adjacency test failed';}catch(e){auditStatus='Audit unavailable: '+e.message;}
+setMode('square');
+})();
+</script>
+</body>
+</html>
