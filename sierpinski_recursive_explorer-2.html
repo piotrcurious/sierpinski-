@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sierpiński tagged-simplex explorer — 2D to volume filling</title>
+<style>
+:root{color-scheme:dark;--bg:#08121a;--panel:#101e29;--panel2:#152735;--line:#294252;--text:#e9f1f5;--muted:#99afbd;--cyan:#71e1e1;--gold:#ffd17b;--green:#9fe0b1;--red:#ff9d90;--violet:#c0a9ff}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,input{font:inherit}button{cursor:pointer}
+.app{height:100%;display:grid;grid-template-columns:365px minmax(0,1fr);overflow:hidden}.side{overflow:auto;padding:16px;background:linear-gradient(180deg,#111f2b,#0b151e);border-right:1px solid var(--line)}.brand{display:flex;gap:10px;align-items:center}.mark{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid #3d7880;background:#12323a;color:var(--cyan);font-size:22px}.brand h1{margin:0;font-size:16px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.lede{font-size:12px;color:#b5c7d0;margin:11px 0 14px}.panel{padding:12px;margin:10px 0;border:1px solid var(--line);border-radius:12px;background:rgba(20,37,50,.9)}.panel h2{margin:0 0 10px;color:#9db6c4;font-size:10px;text-transform:uppercase;letter-spacing:.14em}.switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#09141d;border:1px solid #2b414f;border-radius:9px}.switch button{border:0;border-radius:6px;background:transparent;color:#9eb2be;padding:8px 5px;font-size:11px;font-weight:700}.switch button.active{background:#24515d;color:#effeff;box-shadow:inset 0 0 0 1px #4d8791}.control{margin-top:11px}.head{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#d7e4e9;font-size:12px;margin-bottom:5px}.val{color:var(--gold);font-variant-numeric:tabular-nums;font-weight:700}input[type=range]{width:100%;accent-color:var(--cyan)}input[type=checkbox]{accent-color:var(--cyan);vertical-align:middle}.checks{display:flex;flex-wrap:wrap;gap:8px 13px;margin-top:10px;color:#b9cbd4;font-size:11px}.checks label{display:flex;align-items:center;gap:5px}.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.btn{padding:7px 10px;border:1px solid #3c5a6b;border-radius:8px;background:#1a3341;color:#e8f7fa;font-size:11px;font-weight:700}.btn.primary{background:#1d626b;border-color:#4e9ea4}.btn:hover{filter:brightness(1.13)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.stat{padding:8px;border:1px solid #263d4a;border-radius:8px;background:#0b1721;min-width:0}.stat span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#8ea6b4}.stat strong{display:block;margin-top:2px;font-size:12px;color:#f0f7fa;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.readout{display:grid;grid-template-columns:84px 1fr;gap:5px 8px;margin-top:10px;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}.readout .k{color:#829bab}.readout .v{color:#e0edf2;overflow-wrap:anywhere}.formula{background:#09151f;border:1px solid #263f4e;border-radius:8px;padding:9px;color:#d6e7ee;font:10px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.note{font-size:10px;color:#9fb3bf;margin:8px 0 0}.note strong{color:#e6f1f4}.good{color:var(--green)}.warn{color:var(--gold)}.bad{color:var(--red)}.stage{position:relative;min-width:0;min-height:0;background:radial-gradient(ellipse at 50% 44%,#1b3343 0%,#08121a 72%)}canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}.top{position:absolute;left:15px;right:15px;top:13px;display:flex;justify-content:space-between;gap:9px;pointer-events:none}.tag{padding:8px 10px;border:1px solid #3a5667;border-radius:9px;background:#07131dcc;color:#d1e1e8;font-size:11px;backdrop-filter:blur(8px)}.tag strong{color:#fff}.legend{position:absolute;left:15px;bottom:14px;display:flex;gap:12px;flex-wrap:wrap;padding:8px 10px;border:1px solid #304a59;border-radius:9px;background:#07131dcc;color:#b6c8d1;font-size:10px;pointer-events:none}.sw{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}.status{position:absolute;right:15px;bottom:14px;padding:7px 9px;border:1px solid #304a59;border-radius:8px;background:#07131dcc;color:#91a9b7;font-size:10px;pointer-events:none}
+@media(max-width:900px){.app{grid-template-columns:330px minmax(0,1fr)}}@media(max-width:680px){.app{height:auto;min-height:100%;display:flex;flex-direction:column;overflow:visible}.stage{height:54vh;min-height:360px;order:1}.side{order:2;overflow:visible}.top{left:8px;right:8px;top:8px}.legend{left:8px;bottom:8px}.status{right:8px;bottom:8px}.tag{font-size:9px;padding:6px 7px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand"><div class="mark">∿</div><div><h1>Sierpiński tagged-simplex explorer</h1><small>the same edge recursion · triangle to tetrahedron</small></div></div>
+  <p class="lede">The four triangular maps from the earlier derivation are two levels of this binary rule. The 3D mode applies that exact rule to tetrahedra. Every level partitions the full volume; the cells also shrink to points.</p>
+
+  <section class="panel">
+    <h2>Domain and dimension</h2>
+    <div class="switch" id="dimSwitch"><button data-dim="2">2D triangle</button><button data-dim="3" class="active">3D tetrahedron</button></div>
+    <div class="control"><div class="head"><span id="rootLabel">Root construction</span></div><div class="switch" id="rootSwitch"><button data-root="single" id="singleRootBtn">X fragment</button><button data-root="double" class="active" id="doubleRootBtn">Double tetrahedron</button></div></div>
+    <div class="control"><div class="head"><label for="depth">Binary refinement depth</label><span class="val" id="depthVal">6</span></div><input id="depth" type="range" min="1" max="12" step="1" value="6"></div>
+    <div class="control"><div class="head"><label for="parameter">Curve parameter t</label><span class="val" id="parameterVal">0.3750</span></div><input id="parameter" type="range" min="0" max="1" step="0.0001" value="0.375"></div>
+    <div class="buttons"><button class="btn primary" id="play">▶ Play</button><button class="btn" id="focus">Focus selected cell</button><button class="btn" id="reset">Reset camera</button></div>
+    <div class="checks"><label><input type="checkbox" id="showFill" checked> Cell fill</label><label><input type="checkbox" id="showCells" checked> Cell edges</label><label><input type="checkbox" id="showPath" checked> Path estimate</label><label><input type="checkbox" id="showPorts" checked> Tagged ports</label><label><input type="checkbox" id="autoRotate" checked> Auto rotate</label></div>
+    <div class="control" id="sliceControl" style="display:none"><div class="head"><label for="slice">Interior cross-section · Z</label><span class="val" id="sliceVal">0.50</span></div><input id="slice" type="range" min="0.02" max="0.98" step="0.01" value="0.61"></div>
+    <div class="checks" id="sliceCheck" style="display:none"><label><input type="checkbox" id="showSlice" checked> Show tetrahedron slice</label></div>
+  </section>
+
+  <section class="panel">
+    <h2>Live structure</h2>
+    <div class="stats">
+      <div class="stat"><span>Children / split</span><strong>2</strong></div>
+      <div class="stat"><span>Cell count</span><strong id="cellCount">64</strong></div>
+      <div class="stat"><span>Volume retained</span><strong id="volumeRetained">100%</strong></div>
+      <div class="stat"><span>Volume / leaf</span><strong id="leafVolume">1/64</strong></div>
+      <div class="stat"><span>Worst 8-step diameter ratio</span><strong id="diameterBound">0.500</strong></div>
+      <div class="stat"><span>Current cell</span><strong id="currentCell">—</strong></div>
+    </div>
+    <div class="readout"><div class="k">Address</div><div class="v" id="address">—</div><div class="k">Root piece</div><div class="v" id="rootPiece">—</div><div class="k">Cell centre</div><div class="v" id="cellCentre">—</div><div class="k">Tagged entry</div><div class="v" id="entry">—</div><div class="k">Tagged exit</div><div class="v" id="exit">—</div><div class="k">Curve estimate</div><div class="v" id="curvePoint">—</div></div>
+  </section>
+
+  <section class="panel" id="rulePanel">
+    <h2>One rule in both dimensions</h2>
+    <div class="formula">Parent simplex: [x₁, x₂, x₃, …, xₙ₊₁]<br>Tagged edge: x₁ → x₂<br>Midpoint: m = (x₁ + x₂)/2<br><br>Left child:  [x₁, x₃, x₄, …, m]<br>Right child: [x₃, x₂, x₄, …, m]<br><br>Child tags: x₁ → x₃ → x₂</div>
+    <p class="note">In 2D, the parent is a triangle and each split produces two triangles. In 3D, it is a tetrahedron and each split produces two tetrahedra sharing the face [x₃, x₄, m]. The child volumes are exactly half the parent volume.</p>
+  </section>
+
+  <section class="panel" id="matchPanel">
+    <h2>Exact match to the four planar maps</h2>
+    <div class="formula">K = [A, B, C]<br>A=(0,0), B=(1,0), C=(½,½)<br><br>First split on AB at M=(½,0):<br>[A,C,M] · [C,B,M]<br><br>Second split on AC and CB:<br>[A,M,N] · [M,C,N]<br>[C,M,P] · [M,B,P]<br><br>N=(¼,¼), P=(¾,¼)</div>
+    <p class="note good">At binary depth 2 these are exactly S₀(K), S₁(K), S₂(K), S₃(K), in the same traversal order as the four-map IFS. This is the bridge from the previous derivation to the 3D rule.</p>
+  </section>
+
+  <section class="panel" id="proofPanel">
+    <h2>Why the 3D limit fills volume</h2>
+    <div class="formula">1. Each split partitions a tetrahedron into two half-volume tetrahedra.<br>2. The child tags join at x₃, so consecutive path pieces meet.<br>3. Barycentric matrices for the left and right children are row-stochastic. Exhausting all 2⁸ = 256 products of length 8 gives max Dobrushin coefficient δ = ½.<br>4. Since diam(P·T) ≤ δ(P) diam(T), every 8 levels each cell diameter is at most half its ancestor's.<br>5. Nested cells converge to points; because the cells partition the parent at every level, every point is reached. The same estimate gives a conservative Hölder exponent 1/8 for the parameterized map.</div>
+    <div class="formula">Mₗ = [[1,0,0,0],[0,0,1,0],[0,0,0,1],[½,½,0,0]]<br>Mᵣ = [[0,0,1,0],[0,1,0,0],[0,0,0,1],[½,½,0,0]]<br>δ(P) = ½ maxᵢⱼ Σₖ |Pᵢₖ − Pⱼₖ|</div>
+    <p class="note"><strong>Not a cube curve:</strong> the filled domain is a tetrahedron (or two tetrahedra sharing a face in the paired mode). This is a dimensional extension of the tagged-edge recursion selected by the 2D derivation; the planar rules alone do not uniquely force it. The four planar similarity maps are not being treated as four isotropic 3D maps.</p>
+    <p class="note warn">The tetrahedra become increasingly skewed; the standard 1/3-Hölder/locality behavior is lost. The 8-level contraction certificate still gives a weaker 1/8-Hölder bound. It is a conservative bound, not an optimal exponent.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Navigation</h2>
+    <p class="note">In 3D, drag to orbit and use the wheel or pinch to zoom. The section slider cuts through the interior along a horizontal plane. Scrub t to select a leaf cell and its binary address. The bright edge pair is that cell's tagged entry and exit.</p>
+    <p class="note" id="domainNote">At depth 6, two tetrahedral roots are partitioned into 128 leaf tetrahedra.</p>
+  </section>
+</aside>
+
+<main class="stage">
+  <canvas id="gl" aria-label="Interactive WebGL recursive triangle and tetrahedron explorer"></canvas>
+  <div class="top"><div class="tag"><strong id="sceneTitle">Double tetrahedron · tagged-edge volume curve</strong><br><span id="sceneSub">two tetrahedra share a face; each is filled recursively</span></div><div class="tag"><strong id="sceneBadge">volume partition · all child cells contract</strong><br><span class="hint">drag to orbit · wheel to zoom</span></div></div>
+  <div class="legend"><span><i class="sw" style="background:#65dfe0"></i>ordered path estimate</span><span><i class="sw" style="background:#ffd078"></i>selected tagged edge</span><span><i class="sw" style="background:#b7a1ff"></i>interior slice</span><span><i class="sw" style="background:#7896a8"></i>recursive cell mesh</span></div>
+  <div class="status" id="status">WebGL initializing…</div>
+</main>
+</div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const state={dim:3,root:'double',depth:6,t:.375,playing:false,showFill:true,showCells:true,showPath:true,showPorts:true,showSlice:true,autoRotate:true,yaw:-.55,pitch:.42,zoom:4.2,focus:[0,0,0],slice:.61,last:0};
+const V=(x,y,z=0)=>[x,y,z], add=(a,b)=>a.map((x,i)=>x+b[i]), sub=(a,b)=>a.map((x,i)=>x-b[i]), mul=(a,s)=>a.map(x=>x*s), mid=(a,b)=>mul(add(a,b),.5), dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0), cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], norm=a=>{const l=Math.hypot(...a)||1;return mul(a,1/l)}, dist=(a,b)=>Math.hypot(...sub(a,b));
+const SQRT3=Math.sqrt(3), tetH=Math.sqrt(8/3);
+function makeRoots(){
+ if(state.dim===2){
+  if(state.root==='single')return [{v:[V(0,0),V(1,0),V(.5,.5)],name:'X triangle'}];
+  const P=V(0,0),Q=V(0,-1),R=V(.5,-.5),L=V(-.5,-.5);
+  return [{v:[P,Q,R],name:'first triangular fragment'},{v:[Q,P,L],name:'second triangular fragment'}];
+ }
+ const P=V(-1,0,0),Q=V(1,0,0),R=V(0,SQRT3,0),S=V(0,SQRT3/3,tetH),U=V(0,SQRT3/3,-tetH);
+ if(state.root==='single')return [{v:[P,Q,R,S],name:'X tetrahedron'}];
+ return [{v:[P,Q,R,S],name:'upper tetrahedron'},{v:[Q,P,R,U],name:'lower tetrahedron'}];
+}
+function children(v){const m=mid(v[0],v[1]);const tail=v.slice(3);return [[v[0],v[2],...tail,m],[v[2],v[1],...tail,m]];}
+let roots=[],leaves=[],pathSamples=[],selected=null,selectedPoint=[0,0,0],structureKey='',bounds=null,fitScale=1,fitCenter=[0,0,0],rootZ=[0,0];
+function centroid(v){let p=[0,0,0];for(const q of v)p=add(p,q);return mul(p,1/v.length);}
+function rec(v,addr,rootIndex,depth){if(depth===0){leaves.push({v,addr,rootIndex,index:leaves.length});return;}const c=children(v);rec(c[0],addr+'0',rootIndex,depth-1);rec(c[1],addr+'1',rootIndex,depth-1);}
+function allVertices(){const a=[];for(const r of roots)for(const v of r.v)a.push(v);return a;}
+function calcBounds(){const pts=allVertices(),mins=[Infinity,Infinity,Infinity],maxs=[-Infinity,-Infinity,-Infinity];for(const p of pts)for(let k=0;k<3;k++){mins[k]=Math.min(mins[k],p[k]);maxs[k]=Math.max(maxs[k],p[k]);}bounds={mins,maxs};fitCenter=mins.map((x,i)=>(x+maxs[i])/2);const ext=maxs.map((x,i)=>x-mins[i]);fitScale=2.25/Math.max(...ext);rootZ=[mins[2],maxs[2]];}
+function computeStructure(){roots=makeRoots();leaves=[];roots.forEach((r,i)=>rec(r.v,'',i,state.depth));calcBounds();pathSamples=[];let n=leaves.length;for(let i=0;i<roots.length;i++){const subset=leaves.filter(q=>q.rootIndex===i);if(!subset.length)continue;const start=subset[0].v[0];if(!pathSamples.length)pathSamples.push({t:i/roots.length,p:start});else pathSamples.push({t:i/roots.length,p:start});for(let j=0;j<subset.length;j++)pathSamples.push({t:(i+(j+.5)/subset.length)/roots.length,p:centroid(subset[j].v)});pathSamples.push({t:(i+1)/roots.length,p:subset[subset.length-1].v[1]});}
+ // Collapse duplicate parameter entries at shared root seams, retaining the common port.
+ pathSamples.sort((a,b)=>a.t-b.t);const compact=[];for(const q of pathSamples){if(compact.length&&Math.abs(compact[compact.length-1].t-q.t)<1e-10){compact[compact.length-1]=q;}else compact.push(q);}pathSamples=compact;
+ structureKey=[state.dim,state.root,state.depth].join('/');
+}
+function interpPath(t){if(!pathSamples.length)return [0,0,0];if(t<=0)return pathSamples[0].p;if(t>=1)return pathSamples[pathSamples.length-1].p;let lo=0,hi=pathSamples.length-1;while(lo+1<hi){const m=(lo+hi)>>1;if(pathSamples[m].t<=t)lo=m;else hi=m;}const a=pathSamples[lo],b=pathSamples[hi],u=(t-a.t)/(b.t-a.t||1);return a.p.map((x,i)=>x+(b.p[i]-x)*u);}
+function fmt(p){return '('+p.map(x=>x.toFixed(3)).join(', ')+')';}
+function updateSelection(){if(!leaves.length)return;const k=Math.min(leaves.length-1,Math.floor(state.t*leaves.length));selected=leaves[k];selectedPoint=interpPath(state.t);const root=roots[selected.rootIndex];$('parameterVal').textContent=state.t.toFixed(4);$('cellCount').textContent=leaves.length.toLocaleString();$('volumeRetained').textContent='100%';$('leafVolume').textContent='1/'+Math.pow(2,state.depth).toLocaleString();$('currentCell').textContent=(k+1)+' / '+leaves.length;$('address').textContent=(selected.rootIndex===0?'A':'B')+': '+(selected.addr||'root');$('rootPiece').textContent=root.name;$('cellCentre').textContent=fmt(centroid(selected.v));$('entry').textContent=fmt(selected.v[0]);$('exit').textContent=fmt(selected.v[1]);$('curvePoint').textContent=fmt(selectedPoint);$('depthVal').textContent=state.depth;
+ $('sceneTitle').textContent=(state.dim===2?(state.root==='single'?'Triangle X fragment':'Two-triangle square axiom'):(state.root==='single'?'Tetrahedral X fragment':'Double tetrahedron · axiom analogue'));
+ $('sceneSub').textContent=state.dim===2?'binary depth 2 gives the four maps from the planar derivation':'tagged-edge bisection · tetrahedral cells partition the volume';
+ $('sceneBadge').textContent=(state.dim===2?'area fill':'volume fill')+' · '+leaves.length.toLocaleString()+' cells · 2 children per split';
+ $('domainNote').textContent=state.dim===2?('At depth '+state.depth+', '+leaves.length+' triangles partition '+(state.root==='single'?'the X domain':'both triangles of the square axiom')+'.'):'At depth '+state.depth+', '+leaves.length+' tetrahedra partition '+(state.root==='single'?'the X tetrahedron':'both halves of the double-tetrahedron domain')+'. Each split retains exactly 100% of the parent volume.';
+ $('sliceControl').style.display=state.dim===3?'block':'none';$('sliceCheck').style.display=state.dim===3?'flex':'none';$('sliceVal').textContent=state.slice.toFixed(2);
+}
+
+// Integer numerators of the row-stochastic barycentric child matrices (each divided by 2).
+// Rows list the child vertices in coordinates of the parent vertices [x1,x2,x3,x4].
+const ML2=[[2,0,0,0],[0,0,2,0],[0,0,0,2],[1,1,0,0]],MR2=[[0,0,2,0],[0,2,0,0],[0,0,0,2],[1,1,0,0]];
+function matMulInt(A,B){const C=Array.from({length:4},()=>[0,0,0,0]);for(let i=0;i<4;i++)for(let j=0;j<4;j++)for(let k=0;k<4;k++)C[i][j]+=A[i][k]*B[k][j];return C;}
+function deltaNumerator(M){let d=0;for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=Math.abs(M[i][k]-M[j][k]);d=Math.max(d,s);}return d;}
+function diameterCertificate(){let maxNumerator=0,words=0;function walk(P,n){if(n===0){maxNumerator=Math.max(maxNumerator,deltaNumerator(P));words++;return;}walk(matMulInt(ML2,P),n-1);walk(matMulInt(MR2,P),n-1);}walk([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],8);return {max:maxNumerator/(2*Math.pow(2,8)),maxNumerator,words};}
+const cert=diameterCertificate();$('diameterBound').textContent=cert.max.toFixed(3);$('diameterBound').title=cert.words+' descendant words exhaustively checked';
+
+// Compact WebGL line/triangle renderer.
+const canvas=$('gl'),gl=canvas.getContext('webgl',{antialias:true,alpha:false,depth:true});
+if(!gl){$('status').textContent='WebGL unavailable in this browser';return;}
+const vs='attribute vec3 aPosition;attribute vec4 aColor;attribute vec3 aNormal;uniform mat4 uMVP;varying vec4 vColor;varying float vLight;void main(){gl_Position=uMVP*vec4(aPosition,1.0);gl_PointSize=8.0;vColor=aColor;vec3 n=normalize(aNormal+vec3(0.00001));vec3 l=normalize(vec3(-0.35,0.65,0.72));vLight=0.52+0.48*abs(dot(n,l));}';
+const fs='precision mediump float;varying vec4 vColor;varying float vLight;void main(){gl_FragColor=vec4(vColor.rgb*vLight,vColor.a);}';
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vs));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
+const loc={p:gl.getAttribLocation(prog,'aPosition'),c:gl.getAttribLocation(prog,'aColor'),n:gl.getAttribLocation(prog,'aNormal'),m:gl.getUniformLocation(prog,'uMVP')};
+const bufs={p:gl.createBuffer(),c:gl.createBuffer(),n:gl.createBuffer()};
+function matMul4(a,b){const o=new Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
+function perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far);return [f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0];}
+function lookAt(eye,center,up){const z=norm(sub(eye,center)),x=norm(cross(up,z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1];}
+function world(p){return mul(sub(p,fitCenter),fitScale);}
+function cameraMVP(){const aspect=canvas.width/Math.max(1,canvas.height);let eye;if(state.dim===2){eye=[state.focus[0],state.focus[1],state.zoom+1.5];}else{const cp=Math.cos(state.pitch),sp=Math.sin(state.pitch),cy=Math.cos(state.yaw),sy=Math.sin(state.yaw);eye=[state.focus[0]+state.zoom*cp*sy,state.focus[1]+state.zoom*sp,state.focus[2]+state.zoom*cp*cy];}return matMul4(perspective(Math.PI/4,aspect,.05,80),lookAt(eye,state.focus,[0,1,0]));}
+function packDraw(items,mode,mvp){if(!items.length)return;const ps=[],cs=[],ns=[];for(const it of items){const p=it.p.map(world),n=it.n||[0,0,1];for(let j=0;j<p.length;j++){ps.push(...p[j]);cs.push(...it.c);ns.push(...n);}}gl.bindBuffer(gl.ARRAY_BUFFER,bufs.p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(ps),gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(loc.p);gl.vertexAttribPointer(loc.p,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,bufs.c);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cs),gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(loc.c);gl.vertexAttribPointer(loc.c,4,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,bufs.n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(ns),gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(loc.n);gl.vertexAttribPointer(loc.n,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(loc.m,false,new Float32Array(mvp));let count=0;for(const it of items)count+=it.p.length;gl.drawArrays(mode,0,count);}
+function lineItem(a,b,c){return {p:[a,b],c,n:[0,0,1]};}
+function pointItem(p,c){return {p:[p],c,n:[0,0,1]};}
+function triItem(a,b,c,color){return {p:[a,b,c],c:color,n:norm(cross(sub(b,a),sub(c,a))) };}
+function simplexEdges(v){const out=[];for(let i=0;i<v.length;i++)for(let j=i+1;j<v.length;j++)out.push([v[i],v[j]]);return out;}
+function leafColor(i,rootIndex){const u=(i%17)/16;return rootIndex===0?[.20+.08*u,.55+.12*u,.62+.12*u,.12]:[.42+.08*u,.38+.10*u,.72+.12*u,.12];}
+function geometry(){const fills=[],edges=[],path=[],selectedEdge=[],ports=[],sliceFill=[],sliceLines=[];
+ if(state.showFill){for(let i=0;i<leaves.length;i++){const v=leaves[i].v,col=leafColor(i,leaves[i].rootIndex);if(v.length===3)fills.push(triItem(v[0],v[1],v[2],col));else{const faces=[[0,1,2],[0,1,3],[0,2,3],[1,2,3]];for(const f of faces)fills.push(triItem(v[f[0]],v[f[1]],v[f[2]],col));}}}
+ if(state.showCells){for(const leaf of leaves)for(const [a,b] of simplexEdges(leaf.v))edges.push(lineItem(a,b,[.40,.59,.69,.35]));}
+ if(selected&&state.showCells)for(const [a,b] of simplexEdges(selected.v))selectedEdge.push(lineItem(a,b,[1,.72,.30,.98]));
+ if(state.showPath){for(let i=1;i<pathSamples.length;i++)path.push(lineItem(pathSamples[i-1].p,pathSamples[i].p,[.30,.88,.89,.98]));}
+ if(selected&&state.showPorts){ports.push(lineItem(selected.v[0],selected.v[1],[1,.78,.35,1]));ports.push(pointItem(selected.v[0],[1,.92,.65,1]));ports.push(pointItem(selected.v[1],[.72,.61,1,1]));ports.push(pointItem(selectedPoint,[1,.55,.27,1]));}
+ if(state.dim===3&&state.showSlice){const z=rootZ[0]+(rootZ[1]-rootZ[0])*state.slice;for(let i=0;i<leaves.length;i++){const v=leaves[i].v,pts=[];for(const p of v)if(Math.abs(p[2]-z)<1e-8)pts.push(p);for(const [a,b] of simplexEdges(v)){const da=a[2]-z,db=b[2]-z;if(da*db<0){const t=(z-a[2])/(b[2]-a[2]);pts.push(add(a,mul(sub(b,a),t)));}}const uniq=[];for(const p of pts)if(!uniq.some(q=>dist(p,q)<1e-7))uniq.push(p);if(uniq.length>=3){const c=centroid(uniq);uniq.sort((a,b)=>Math.atan2(a[1]-c[1],a[0]-c[0])-Math.atan2(b[1]-c[1],b[0]-c[0]));for(let j=1;j<uniq.length-1;j++)sliceFill.push(triItem(uniq[0],uniq[j],uniq[j+1],[.68,.57,1,.45]));for(let j=0;j<uniq.length;j++)sliceLines.push(lineItem(uniq[j],uniq[(j+1)%uniq.length],[.84,.77,1,.96]));}}}
+ return {fills,edges,path,selectedEdge,ports,sliceFill,sliceLines};}
+let dragging=false,lastX=0,lastY=0;
+function render(now){const dt=Math.min(.05,(now-state.last)/1000||0);state.last=now;if(state.playing){state.t+=dt*.09;if(state.t>1)state.t=0;$('parameter').value=state.t;updateSelection();}
+ if(state.autoRotate&&state.dim===3&&!dragging)state.yaw+=dt*.13;
+ const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(.025,.047,.067,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const mvp=cameraMVP(),g=geometry();
+ gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);packDraw(g.fills,gl.TRIANGLES,mvp);packDraw(g.sliceFill,gl.TRIANGLES,mvp);gl.depthMask(true);packDraw(g.sliceLines,gl.LINES,mvp);packDraw(g.edges,gl.LINES,mvp);packDraw(g.path,gl.LINES,mvp);packDraw(g.selectedEdge,gl.LINES,mvp);packDraw(g.ports,gl.LINES,mvp);gl.disable(gl.BLEND);
+ $('status').textContent=(state.dim===2?'2D · triangle partition':'3D · tetrahedral volume partition')+' · '+leaves.length.toLocaleString()+' cells · '+(state.playing?'traversing':'ready');requestAnimationFrame(render);}
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;if(state.dim===3){state.yaw+=dx*.008;state.pitch=Math.max(-1.35,Math.min(1.35,state.pitch+dy*.008));}else{state.focus[0]-=dx*.0025;state.focus[1]+=dy*.0025;}});canvas.addEventListener('pointerup',()=>dragging=false);canvas.addEventListener('pointercancel',()=>dragging=false);canvas.addEventListener('wheel',e=>{e.preventDefault();state.zoom=Math.max(1.8,Math.min(10,state.zoom*Math.exp(e.deltaY*.001)));},{passive:false});
+function sync(rebuild=true){state.depth=+$('depth').value;state.slice=+$('slice').value;if(rebuild){computeStructure();}updateSelection();$('dimSwitch').querySelectorAll('button').forEach(b=>b.classList.toggle('active',+b.dataset.dim===state.dim));$('rootSwitch').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.root===state.root));$('singleRootBtn').textContent=state.dim===2?'X triangle':'X tetrahedron';$('doubleRootBtn').textContent=state.dim===2?'Square pair':'Double tetrahedron';$('rootLabel').textContent=state.dim===2?'Root construction':'3D root domain';$('depth').max=state.dim===2?'12':'10';$('depth').value=state.depth;$('rulePanel').querySelector('h2').textContent=state.dim===2?'Triangle rule':'Tetrahedron rule';$('matchPanel').style.display=state.dim===2?'block':'block';$('proofPanel').style.display=state.dim===3?'block':'block';$('autoRotate').disabled=state.dim===2;}
+$('dimSwitch').addEventListener('click',e=>{const b=e.target.closest('button[data-dim]');if(!b)return;state.dim=+b.dataset.dim;state.depth=Math.min(state.depth,state.dim===2?12:10);state.focus=[0,0,0];state.yaw=-.55;state.pitch=.42;state.zoom=4.2;sync(true);});
+$('rootSwitch').addEventListener('click',e=>{const b=e.target.closest('button[data-root]');if(!b)return;state.root=b.dataset.root;state.focus=[0,0,0];sync(true);});
+$('depth').addEventListener('input',()=>sync(true));$('parameter').addEventListener('input',e=>{state.t=+e.target.value;updateSelection();});
+$('slice').addEventListener('input',e=>{state.slice=+e.target.value;$('sliceVal').textContent=state.slice.toFixed(2);});
+$('showFill').addEventListener('change',e=>state.showFill=e.target.checked);$('showCells').addEventListener('change',e=>state.showCells=e.target.checked);$('showPath').addEventListener('change',e=>state.showPath=e.target.checked);$('showPorts').addEventListener('change',e=>state.showPorts=e.target.checked);$('showSlice').addEventListener('change',e=>state.showSlice=e.target.checked);$('autoRotate').addEventListener('change',e=>state.autoRotate=e.target.checked);
+$('play').addEventListener('click',()=>{state.playing=!state.playing;$('play').textContent=state.playing?'Ⅱ Pause':'▶ Play';});$('focus').addEventListener('click',()=>{if(selected)state.focus=world(centroid(selected.v));});$('reset').addEventListener('click',()=>{state.focus=[0,0,0];state.yaw=-.55;state.pitch=.42;state.zoom=4.2;});
+$('parameter').value=state.t;$('depth').value=state.depth;sync(true);requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
