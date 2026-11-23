@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tagged-simplex volume-filling curve explorer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2b;--panel2:#172238;--line:#2a3853;--muted:#9aabc4;--text:#edf3ff;--cyan:#65d6e8;--gold:#f5c96a;--green:#78d6a5;--pink:#f08ca5}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:19px 22px 13px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,#111b30,#0c1323)}
+h1{font-size:20px;letter-spacing:.01em;margin:0 0 4px;font-weight:700}header p{color:var(--muted);margin:0;max-width:930px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;padding:14px;max-width:1600px;margin:auto}
+.viewer{min-width:0;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#080d18;position:relative;min-height:620px}
+#gl{width:100%;height:620px;display:block;touch-action:none;cursor:grab}#gl:active{cursor:grabbing}
+.hud{position:absolute;left:13px;top:12px;display:flex;gap:7px;flex-wrap:wrap;pointer-events:none}
+.pill{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#d7e7fa;background:#142238dd;border:1px solid #40516b;border-radius:999px;padding:5px 9px}
+.help{position:absolute;right:13px;bottom:12px;color:#a8b8cf;background:#101a2add;border:1px solid #33435c;border-radius:8px;padding:6px 9px;font-size:11px;pointer-events:none}
+.sidebar{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px}
+.card h2{font-size:13px;margin:0 0 10px;letter-spacing:.04em;text-transform:uppercase;color:#c9d7ec}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+button{appearance:none;border:1px solid #40516b;background:#1a2942;color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--cyan);background:#20334f}button.active{background:#174254;border-color:#51bdce;color:#e9fcff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0 5px}.row label{color:#cfdaeb}.value{font-variant-numeric:tabular-nums;color:var(--cyan);font-weight:650}
+input[type=range]{width:100%;accent-color:var(--cyan);margin:4px 0 3px}
+.controls{display:flex;gap:7px}.controls button{flex:1}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:9px}
+.checks label{display:flex;align-items:center;gap:7px;color:#c2cfe1;font-size:12px}.checks input{accent-color:var(--cyan)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.metric{background:var(--panel2);border-radius:8px;padding:8px 9px;min-width:0}.metric span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}.metric strong{display:block;font-size:16px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:#c5d5eb;overflow-wrap:anywhere}
+.rule{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.7;color:#deebfb;background:#0b1322;border:1px solid #26354d;border-radius:8px;padding:9px;overflow-wrap:anywhere}
+.note{font-size:11px;color:var(--muted);margin:8px 0 0}.good{color:var(--green)}.warn{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}th,td{text-align:left;border-bottom:1px solid #29364d;padding:5px 4px}th{color:#9fb2cc;font-weight:600}td:last-child{text-align:right;color:#d9e6f7}
+footer{max-width:1600px;margin:0 auto;padding:0 14px 18px;color:#8fa1ba;font-size:11px}
+@media(max-width:900px){main{grid-template-columns:1fr}.viewer{min-height:480px}#gl{height:480px}.sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.sidebar .wide{grid-column:1/-1}}
+@media(max-width:560px){header{padding:15px}main{padding:8px;gap:8px}.sidebar{display:flex}.viewer{min-height:390px}#gl{height:390px}.help{font-size:10px}.card{padding:11px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tagged-simplex volume-filling curve</h1>
+  <p>An interactive construction from one rule: bisect the tagged edge of an ordered simplex, recurse into the two child simplices, and concatenate their paths at the shared vertex. The 3D mode subdivides a tetrahedron itself—no cube substitution, extrusion, or Z-from-parameter lift.</p>
+</header>
+<main>
+  <section class="viewer">
+    <canvas id="gl" aria-label="Interactive WebGL rendering of recursive simplex subdivision"></canvas>
+    <div class="hud"><span class="pill" id="modeTag">3D · tetrahedron</span><span class="pill" id="depthTag">depth 5 · 32 cells</span><span class="pill" id="viewTag">all descendants</span></div>
+    <div class="help">drag: orbit · wheel/pinch: zoom · play: follow the recursive path</div>
+  </section>
+  <aside class="sidebar">
+    <section class="card">
+      <h2>Domain</h2>
+      <div class="modes">
+        <button id="mode2" type="button">2D triangle</button>
+        <button id="mode3" type="button" class="active">3D tetrahedron</button>
+      </div>
+      <p class="note">Both modes use the same ordered-vertex bisection rule. At two 2D levels, the four triangles are the four-map construction from the derivation.</p>
+    </section>
+    <section class="card">
+      <h2>Refinement and traversal</h2>
+      <div class="row"><label for="depth">Subdivision depth</label><span class="value" id="depthVal">5</span></div>
+      <input id="depth" type="range" min="0" max="10" step="1" value="5">
+      <div class="row"><label for="param">Curve parameter t</label><span class="value" id="paramVal">0.3750</span></div>
+      <input id="param" type="range" min="0" max="10000" step="1" value="3750">
+      <div class="controls"><button id="play" type="button">▶ Play</button><button id="resetCam" type="button">Reset view</button></div>
+      <div class="checks">
+        <label><input id="cells" type="checkbox" checked> descendant cells</label>
+        <label><input id="path" type="checkbox" checked> path approximation</label>
+        <label><input id="selected" type="checkbox" checked> selected cell</label>
+        <label><input id="split" type="checkbox" checked> selected next split</label>
+        <label><input id="root" type="checkbox" checked> root boundary</label>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Selected address</h2>
+      <div class="mono" id="address">01100</div>
+      <div class="metrics" style="margin-top:9px">
+        <div class="metric"><span>cells</span><strong id="cellCount">32</strong></div>
+        <div class="metric"><span>cell volume / area</span><strong id="measure">1/32</strong></div>
+        <div class="metric"><span>diameter guarantee</span><strong id="diamBound">1× root</strong></div>
+        <div class="metric"><span>path segments</span><strong id="segments">32</strong></div>
+      </div>
+      <p class="note">The selected leaf is the interval containing t. The polyline joins the first and second tagged-edge vertices of successive leaves.</p>
+      <div class="rule" id="ports" style="margin-top:9px">v₁ → v₂ · join at v₃</div>
+    </section>
+    <section class="card wide">
+      <h2>Exact subdivision rule</h2>
+      <div class="rule">m = (v₁ + v₂) / 2<br><br>T₀ = [v₁, v₃, …, vₙ₊₁, m]<br>T₁ = [v₃, v₂, v₄, …, vₙ₊₁, m]<br><br>Tagged edges: v₁→v₃ and v₃→v₂<br>Shared traversal port: v₃</div>
+      <p class="note">The children have disjoint interiors, share the face [v₃,…,vₙ₊₁,m], and each has exactly half the parent's n-dimensional volume.</p>
+    </section>
+    <section class="card wide">
+      <h2>Diameter contraction audit</h2>
+      <p class="note" style="margin-top:0">For the tetrahedral barycentric matrices, all binary products of each length were enumerated exactly using integer arithmetic. δ is the Dobrushin coefficient; it bounds Euclidean simplex diameter through the convex-combination coupling inequality.</p>
+      <table><thead><tr><th>Product length</th><th>Maximum δ</th><th>Meaning</th></tr></thead><tbody id="auditRows"></tbody></table>
+      <p class="note good">Every 8 consecutive bisections contract every descendant diameter by at least 1/2.</p>
+      <p class="note warn">This is not a shape-regularity guarantee. Tetrahedra can become sliver-like; shrinking diameter, not bounded aspect ratio, is the property used for convergence.</p>
+    </section>
+  </aside>
+</main>
+<footer>Standalone WebGL 1.0 · no libraries or network requests. The displayed finite polyline is the chordal approximation: one segment per level-depth simplex. The limiting map is obtained as the nested cells shrink and the tagged ports agree at every dyadic join.</footer>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('gl');
+const gl = canvas.getContext('webgl', {antialias:true, alpha:false, depth:true, premultipliedAlpha:false});
+if (!gl) { $('modeTag').textContent = 'WebGL unavailable'; $('depthTag').textContent = 'Enable WebGL in this browser'; return; }
+
+const V = (x,y,z=0) => [x,y,z];
+const root2 = [V(0,0,0), V(1,0,0), V(.5,.5,0)];
+const root3 = [V(0,0,0), V(1,0,0), V(.5,Math.sqrt(3)/2,0), V(.5,Math.sqrt(3)/6,Math.sqrt(2/3))];
+let mode = 3, depth = 5, t = .375, playing = false, lastTime = 0;
+let showCells = true, showPath = true, showSelected = true, showSplit = true, showRoot = true;
+let azimuth = -0.9, elevation = .52, distance = 2.9, dragging = false, lastX=0, lastY=0;
+let root = root3, cells = [], pathPoints = [], selectedCell = null, selectedIndex = 0;
+
+function midpoint(a,b){ return a.map((x,i)=>(x+b[i])*.5); }
+function subdivide(vertices){
+  const m = midpoint(vertices[0], vertices[1]);
+  const left = [vertices[0], ...vertices.slice(2), m];
+  const right = [vertices[2], vertices[1], ...vertices.slice(3), m];
+  return [left,right,m];
+}
+function buildTree(v, d, address='', out=[]){
+  if(d===0){ out.push({v,address}); return out; }
+  const [a,b] = subdivide(v);
+  buildTree(a,d-1,address+'0',out);
+  buildTree(b,d-1,address+'1',out);
+  return out;
+}
+function getCellAt(v, address){
+  let cur=v;
+  for(const bit of address){ const pair=subdivide(cur); cur=pair[bit==='0'?0:1]; }
+  return cur;
+}
+function rebuild(){
+  root = mode===2 ? root2 : root3;
+  cells = buildTree(root,depth);
+  pathPoints = [];
+  if(cells.length){ pathPoints.push(cells[0].v[0]); for(const c of cells) pathPoints.push(c.v[1]); }
+  const count=2**depth;
+  selectedIndex=Math.min(count-1,Math.floor(t*count));
+  selectedCell=cells[selectedIndex] || {v:root,address:''};
+  updateInfo();
+}
+function mix(a,b,u){return a.map((x,i)=>x+(b[i]-x)*u);}
+function pointAtParameter(){
+  const n=pathPoints.length-1;
+  if(!n) return root[0];
+  const q=Math.min(n-1,Math.floor(t*n));
+  return mix(pathPoints[q],pathPoints[q+1],t*n-q);
+}
+function fmtPoint(p){return '('+p.map(x=>x.toFixed(3)).join(', ')+')';}
+function updateInfo(){
+  const count=2**depth;
+  $('modeTag').textContent=mode===2?'2D · triangle':'3D · tetrahedron';
+  $('depthTag').textContent=`depth ${depth} · ${count.toLocaleString()} cells`;
+  $('viewTag').textContent=showCells?'all descendants':'path view';
+  $('depthVal').textContent=depth;
+  $('paramVal').textContent=t.toFixed(4);
+  $('address').textContent=selectedCell.address||'(root)';
+  $('cellCount').textContent=count.toLocaleString();
+  $('measure').textContent='1/'+count.toLocaleString();
+  const blocks=Math.floor(depth/8);
+  $('diamBound').textContent=blocks===0?'1× root':`≤ ${1/(2**blocks)}× root`;
+  $('segments').textContent=count.toLocaleString();
+  const v=selectedCell.v;
+  $('ports').textContent=`tagged edge v₁→v₂: ${fmtPoint(v[0])} → ${fmtPoint(v[1])}\njoin vertex v₃: ${fmtPoint(v[2])}${mode===3?'\nv₄: '+fmtPoint(v[3]):''}`;
+}
+
+// Exact integer audit for the two tetrahedral barycentric matrices B_i = 2 A_i.
+function matMul(A,B){
+  const n=A.length, m=B[0].length, k=B.length;
+  const C=Array.from({length:n},()=>Array(m).fill(0n));
+  for(let i=0;i<n;i++) for(let j=0;j<m;j++) for(let q=0;q<k;q++) C[i][j]+=A[i][q]*B[q][j];
+  return C;
+}
+const BI=[
+ [[2n,0n,0n,0n],[0n,0n,2n,0n],[0n,0n,0n,2n],[1n,1n,0n,0n]],
+ [[0n,0n,2n,0n],[0n,2n,0n,0n],[0n,0n,0n,2n],[1n,1n,0n,0n]]
+];
+function gcd(a,b){a=a<0n?-a:a;b=b<0n?-b:b;while(b){const r=a%b;a=b;b=r;}return a;}
+function frac(n,d){const g=gcd(n,d);return `${n/g}/${d/g}`;}
+function audit(){
+  const I=Array.from({length:4},(_,i)=>Array.from({length:4},(_,j)=>i===j?1n:0n));
+  let products=[I], rows=[];
+  for(let k=1;k<=8;k++){
+    const next=[];
+    for(const P of products) for(const B of BI) next.push(matMul(B,P));
+    products=next;
+    let best=0n;
+    for(const M of products){
+      let local=0n;
+      for(let i=0;i<4;i++) for(let j=0;j<4;j++){
+        let s=0n; for(let c=0;c<4;c++){const d=M[i][c]-M[j][c];s+=d<0n?-d:d;}
+        if(s>local)local=s;
+      }
+      if(local>best)best=local;
+    }
+    const denom=2n**BigInt(k+1);
+    rows.push({k,exact:frac(best,denom),numeric:Number(best)/Number(denom),products:products.length});
+  }
+  $('auditRows').innerHTML=rows.map(r=>`<tr><td>${r.k} (${r.products} products)</td><td>${r.exact}</td><td>${r.numeric===1?'no uniform gain':`≤ ${r.numeric.toFixed(3)}`}</td></tr>`).join('');
+  return rows;
+}
+const auditRows=audit();
+
+// Minimal column-major matrix utilities.
+function perspective(fovy,aspect,near,far){
+  const f=1/Math.tan(fovy/2), nf=1/(near-far); const o=new Float32Array(16);
+  o[0]=f/aspect;o[5]=f;o[10]=(far+near)*nf;o[11]=-1;o[14]=2*far*near*nf;return o;
+}
+function normalize(a){const l=Math.hypot(...a)||1;return a.map(x=>x/l);}
+function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function lookAt(eye,center,up){
+  const z=normalize([eye[0]-center[0],eye[1]-center[1],eye[2]-center[2]]);
+  const x=normalize(cross(up,z)), y=cross(z,x); const o=new Float32Array(16);
+  o[0]=x[0];o[1]=y[0];o[2]=z[0];o[3]=0;
+  o[4]=x[1];o[5]=y[1];o[6]=z[1];o[7]=0;
+  o[8]=x[2];o[9]=y[2];o[10]=z[2];o[11]=0;
+  o[12]=-dot(x,eye);o[13]=-dot(y,eye);o[14]=-dot(z,eye);o[15]=1;return o;
+}
+function multiply(a,b){
+  const o=new Float32Array(16);
+  for(let c=0;c<4;c++) for(let r=0;r<4;r++) o[c*4+r]=a[0*4+r]*b[c*4+0]+a[1*4+r]*b[c*4+1]+a[2*4+r]*b[c*4+2]+a[3*4+r]*b[c*4+3];
+  return o;
+}
+
+const vs=`attribute vec3 aPos; attribute vec4 aCol; uniform mat4 uMVP; uniform float uPointSize; varying vec4 vCol; void main(){ gl_Position=uMVP*vec4(aPos,1.0); gl_PointSize=uPointSize; vCol=aCol; }`;
+const fs=`precision mediump float; varying vec4 vCol; void main(){ gl_FragColor=vCol; }`;
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+const program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,vs));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);
+if(!gl.getProgramParameter(program,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+gl.useProgram(program);
+const posLoc=gl.getAttribLocation(program,'aPos'),colLoc=gl.getAttribLocation(program,'aCol'),mvpLoc=gl.getUniformLocation(program,'uMVP'),sizeLoc=gl.getUniformLocation(program,'uPointSize');
+const posBuf=gl.createBuffer(),colBuf=gl.createBuffer();
+gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+function hsv(h,s,v,a){
+  let i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),r=v*(1-(1-f)*s),c;
+  switch(i%6){case 0:c=[v,r,p];break;case 1:c=[q,v,p];break;case 2:c=[p,v,r];break;case 3:c=[p,q,v];break;case 4:c=[r,p,v];break;default:c=[v,p,q];}
+  return [...c,a];
+}
+function hashAddress(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function batch(){return {p:[],c:[]};}
+function emit(b,p,c){b.p.push(p[0],p[1],p[2]);b.c.push(c[0],c[1],c[2],c[3]);}
+function line(b,a,c,col){emit(b,a,col);emit(b,c,col);}
+function tri(b,a,c,d,col){emit(b,a,col);emit(b,c,col);emit(b,d,col);}
+function cellGeometry(cell,fillB,edgeB,alpha=0.12){
+  const v=cell.v,n=v.length, hue=(hashAddress(cell.address)*0.00000000023)%1;
+  const fc=hsv(hue,.62,.85,alpha), ec=hsv((hue+.04)%1,.42,.95,.40);
+  if(n===3){tri(fillB,v[0],v[1],v[2],fc);for(let i=0;i<3;i++)line(edgeB,v[i],v[(i+1)%3],ec);}
+  else{
+    const faces=[[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+    for(const f of faces)tri(fillB,v[f[0]],v[f[1]],v[f[2]],fc);
+    const edges=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+    for(const e of edges)line(edgeB,v[e[0]],v[e[1]],ec);
+  }
+}
+function rootEdges(b,v,col){
+  const edges=v.length===3?[[0,1],[1,2],[2,0]]:[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+  for(const e of edges)line(b,v[e[0]],v[e[1]],col);
+}
+function buildRenderBatches(){
+  const fills=batch(),edges=batch(),pathB=batch(),rootB=batch(),selFill=batch(),selEdge=batch(),splitB=batch(),markers=batch();
+  if(showCells){for(const c of cells)cellGeometry(c,fills,edges,mode===2?.19:.095);}
+  if(showRoot)rootEdges(rootB,root,[.79,.88,1,.95]);
+  if(showPath){const col=[.28,.88,1,.98];for(let i=0;i<pathPoints.length-1;i++)line(pathB,pathPoints[i],pathPoints[i+1],col);}
+  const cur=selectedCell.v;
+  if(showSelected){
+    const tmp={v:cur,address:'selected'};
+    cellGeometry(tmp,selFill,selEdge,.23);
+    const gold=[1,.78,.24,1], pink=[1,.36,.53,1], green=[.35,1,.67,1];
+    line(markers,cur[0],cur[1],pink);
+    emit(markers,cur[0],pink); emit(markers,cur[1],pink);
+    emit(markers,cur[2],green);
+    emit(markers,pointAtParameter(),[.25,.94,1,1]);
+    const mid=midpoint(cur[0],cur[1]);
+    emit(markers,mid,gold);
+    if(showSplit){
+      const [l,r,m]=subdivide(cur);
+      const ghost={v:l,address:'ghost0'},ghost2={v:r,address:'ghost1'};
+      const dummy=batch();cellGeometry(ghost,dummy,splitB,0);cellGeometry(ghost2,dummy,splitB,0);
+      line(splitB,l[0],l[1],green);line(splitB,r[0],r[1],green);
+      // Draw the complete common face: [v3, v4, ..., m].
+      const shared=[...cur.slice(2),m];
+      if(shared.length===2)line(splitB,shared[0],shared[1],gold);
+      else if(shared.length===3){line(splitB,shared[0],shared[1],gold);line(splitB,shared[1],shared[2],gold);line(splitB,shared[2],shared[0],gold);}
+    }
+  }
+  return {fills,edges,pathB,rootB,selFill,selEdge,splitB,markers};
+}
+function drawBatch(b,modeDraw,alphaDepth=false,pointSize=8){
+  if(!b.p.length)return;
+  gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(b.p),gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(posLoc);gl.vertexAttribPointer(posLoc,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,colBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(b.c),gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(colLoc);gl.vertexAttribPointer(colLoc,4,gl.FLOAT,false,0,0);
+  gl.uniform1f(sizeLoc,pointSize);gl.drawArrays(modeDraw,0,b.p.length/3);
+}
+function resize(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  gl.viewport(0,0,w,h);
+}
+function render(){
+  resize();
+  gl.clearColor(.025,.039,.067,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const center=mode===2?[.5,1/6,0]:[.5,Math.sqrt(3)/6,Math.sqrt(2/3)/4];
+  let eye,up;
+  if(mode===2){eye=[center[0],center[1],distance+center[2]];up=[0,1,0];}
+  else{eye=[center[0]+distance*Math.cos(elevation)*Math.sin(azimuth),center[1]-distance*Math.cos(elevation)*Math.cos(azimuth),center[2]+distance*Math.sin(elevation)];up=[0,0,1];}
+  const view=lookAt(eye,center,up),proj=perspective(Math.PI/4,canvas.width/canvas.height,.01,60),mvp=multiply(proj,view);
+  gl.useProgram(program);gl.uniformMatrix4fv(mvpLoc,false,mvp);
+  const b=buildRenderBatches();
+  // Translucent simplex faces first; then subdivision edges and path.
+  gl.depthMask(false);drawBatch(b.fills,gl.TRIANGLES);gl.depthMask(true);
+  drawBatch(b.edges,gl.LINES);drawBatch(b.rootB,gl.LINES);drawBatch(b.pathB,gl.LINES);
+  gl.depthMask(false);drawBatch(b.selFill,gl.TRIANGLES);gl.depthMask(true);
+  drawBatch(b.selEdge,gl.LINES);drawBatch(b.splitB,gl.LINES);drawBatch(b.markers,gl.POINTS,false,10);
+  requestAnimationFrame(frame);
+}
+function frame(ts){
+  if(playing){if(lastTime) t=(t+(ts-lastTime)*.000075)%1;lastTime=ts;$('param').value=Math.round(t*10000);const idx=Math.min(2**depth-1,Math.floor(t*2**depth));if(idx!==selectedIndex){selectedIndex=idx;selectedCell=cells[idx];updateInfo();$('paramVal').textContent=t.toFixed(4);}}
+  else lastTime=ts;
+  render();
+}
+
+function setMode(m){mode=m;depth=Math.min(depth,m===2?12:10);$('depth').max=m===2?12:10;$('depth').value=depth;$('mode2').classList.toggle('active',m===2);$('mode3').classList.toggle('active',m===3);distance=m===2?2.6:2.9;azimuth=-.9;elevation=.52;rebuild();}
+$('mode2').addEventListener('click',()=>setMode(2));$('mode3').addEventListener('click',()=>setMode(3));
+$('depth').addEventListener('input',e=>{depth=+e.target.value;rebuild();});
+$('param').addEventListener('input',e=>{t=+e.target.value/10000;selectedIndex=Math.min(2**depth-1,Math.floor(t*2**depth));selectedCell=cells[selectedIndex];updateInfo();});
+$('play').addEventListener('click',()=>{playing=!playing;$('play').textContent=playing?'Ⅱ Pause':'▶ Play';lastTime=0;});
+$('resetCam').addEventListener('click',()=>{azimuth=-.9;elevation=.52;distance=mode===2?2.6:2.9;});
+for(const [id,key] of [['cells','cells'],['path','path'],['selected','selected'],['split','split'],['root','root']])$(id).addEventListener('change',e=>{ if(key==='cells')showCells=e.target.checked; if(key==='selected')showSelected=e.target.checked; if(key==='split')showSplit=e.target.checked; if(key==='root')showRoot=e.target.checked; if(key==='path')showPath=e.target.checked;updateInfo();});
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;if(mode===3){azimuth+=dx*.008;elevation=Math.max(.06,Math.min(1.48,elevation+dy*.008));}else{azimuth+=dx*.008;elevation=Math.max(.95,Math.min(1.56,elevation+dy*.004));} });
+canvas.addEventListener('pointerup',()=>dragging=false);canvas.addEventListener('pointercancel',()=>dragging=false);
+canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(1.2,Math.min(9,distance*Math.exp(e.deltaY*.001)));},{passive:false});
+
+rebuild();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
