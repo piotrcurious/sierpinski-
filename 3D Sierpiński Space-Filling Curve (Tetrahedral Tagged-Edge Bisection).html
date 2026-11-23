@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Sierpiński Space-Filling Curve — Tetrahedral Tagged-Edge Bisection</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (r128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #07090e;
+      font-family: 'Inter', sans-serif;
+      color: #e2e8f0;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #webgl-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+    /* Custom range sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(148, 163, 184, 0.22);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -5px;
+      background-color: #38bdf8;
+      height: 15px;
+      width: 15px;
+      border-radius: 50%;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.65);
+      transition: transform 0.1s ease, background-color 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background-color: #7dd3fc;
+    }
+    /* Glassmorphic panels */
+    .glass-panel {
+      background: rgba(11, 15, 25, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.65);
+    }
+    /* Floating 3D HTML labels */
+    .vertex-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: #f8fafc;
+      white-space: nowrap;
+      transition: opacity 0.12s ease;
+      z-index: 5;
+    }
+    /* Custom subtle scrollbars for small screens */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Viewport -->
+  <div id="webgl-container"></div>
+
+  <!-- Projected 3D Vertex Labels Overlay -->
+  <div id="labels-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+    <div id="lbl-x1" class="vertex-label text-rose-300 border-rose-400/50">x₁ (Start)</div>
+    <div id="lbl-x2" class="vertex-label text-amber-300 border-amber-400/50">x₂ (End)</div>
+    <div id="lbl-x3" class="vertex-label text-emerald-300 border-emerald-400/50">x₃ (Port)</div>
+    <div id="lbl-x4" class="vertex-label text-sky-300 border-sky-400/50">x₄ (Apex)</div>
+    <div id="lbl-m" class="vertex-label text-purple-300 border-purple-400/50">m = (x₁+x₂)/2</div>
+    <div id="lbl-port" class="vertex-label text-emerald-200 bg-emerald-950/90 border-emerald-400/80 shadow-lg">Active x₃ Port</div>
+  </div>
+
+  <!-- Top-Left Title & Mathematical Specification HUD -->
+  <header class="fixed top-3 left-3 sm:top-4 sm:left-4 z-20 max-w-[calc(100vw-1.5rem)] sm:max-w-md glass-panel rounded-2xl p-3.5 sm:p-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+          <span class="text-[10px] font-mono-tech uppercase tracking-widest text-sky-400">ℝ³ Simplex Space-Filling Curve</span>
+        </div>
+        <h1 class="text-sm sm:text-base font-bold text-slate-100 tracking-tight mt-0.5">
+          3D Sierpiński Tagged-Edge Bisection
+        </h1>
+      </div>
+      <button id="toggle-hud-btn" title="Toggle HUD Details" class="p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 transition text-xs font-mono-tech">
+        HUD
+      </button>
+    </div>
+
+    <div id="hud-details" class="mt-3 pt-3 border-t border-slate-700/50 space-y-2.5 text-xs">
+      <!-- Recursive Equations Summary -->
+      <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80 font-mono-tech text-[11px] leading-relaxed text-slate-300">
+        <div class="text-slate-400">T = [x₁, x₂, x₃, x₄], &nbsp;m = ½(x₁ + x₂)</div>
+        <div class="text-sky-300">T₀ = [x₁, x₃, x₄, m] &nbsp;<span class="text-slate-500">e=[x₁,x₃]</span></div>
+        <div class="text-indigo-300">T₁ = [x₃, x₂, x₄, m] &nbsp;<span class="text-slate-500">e=[x₃,x₂]</span></div>
+      </div>
+
+      <!-- Live Telemetry Grid -->
+      <div class="grid grid-cols-2 gap-2 font-mono-tech text-[11px]">
+        <div class="bg-slate-900/75 rounded-xl p-2 border border-slate-800/70">
+          <div class="text-[10px] text-slate-400 uppercase">Cells (2ᵏ)</div>
+          <div id="hud-cell-count" class="text-sm font-semibold text-slate-100 mt-0.5">64</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-xl p-2 border border-slate-800/70">
+          <div class="text-[10px] text-slate-400 uppercase">Diam Bound 2⁻⌊ᵏ/⁸⌋</div>
+          <div id="hud-diam-bound" class="text-sm font-semibold text-emerald-400 mt-0.5">1.0000 · diam(T)</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-xl p-2 border border-slate-800/70 col-span-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 uppercase">Active Binary Word w ∈ {0,1}ᵏ</span>
+            <span id="hud-t-val" class="text-[11px] text-sky-400 font-semibold">t = 0.5000</span>
+          </div>
+          <div id="hud-word" class="text-xs font-semibold text-amber-300 truncate mt-0.5 tracking-wider">100000</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-xl p-2 border border-slate-800/70 col-span-2">
+          <div class="text-[10px] text-slate-400 uppercase">Active Cell T_w = [v₁, v₂, v₃, v₄]</div>
+          <div id="hud-cell-verts" class="text-[10px] text-slate-300 mt-0.5 leading-snug space-y-0.5">
+            <div>v₁: (0.00, 0.00, 0.00)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bottom-Left Legend & Controls Hint -->
+  <div class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-20 hidden md:flex flex-col gap-2 glass-panel rounded-2xl p-3 text-xs max-w-xs">
+    <div class="flex items-center justify-between text-[11px] font-mono-tech text-slate-300">
+      <span>t = 0 (x₁)</span>
+      <span class="text-slate-400">Parameter Gradient</span>
+      <span>t = 1 (x₂)</span>
+    </div>
+    <div id="gradient-bar" class="h-2 w-full rounded-full" style="background: linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725);"></div>
+    <div class="text-[11px] text-slate-400 flex items-center justify-between pt-0.5">
+      <span>Drag: Orbit</span>
+      <span>Right/2-Finger: Pan</span>
+      <span>Scroll/Pinch: Zoom</span>
+    </div>
+  </div>
+
+  <!-- Right / Bottom-Right Control Panel -->
+  <aside id="control-panel" class="fixed bottom-3 right-3 sm:top-4 sm:bottom-auto sm:right-4 z-20 w-[calc(100vw-1.5rem)] sm:w-80 max-h-[52vh] sm:max-h-[calc(100vh-2rem)] overflow-y-auto glass-panel rounded-2xl p-3.5 sm:p-4 space-y-3.5">
+    <div class="flex items-center justify-between border-b border-slate-700/50 pb-2">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Subdivision Controls</span>
+      <button id="reset-cam-btn" class="text-[11px] font-mono-tech px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-sky-300 border border-slate-700/60 transition">
+        Reset View
+      </button>
+    </div>
+
+    <!-- Recursion Depth k -->
+    <div class="space-y-1.5">
+      <div class="flex items-center justify-between text-xs">
+        <label for="depth-slider" class="font-medium text-slate-200">Recursion Depth (k)</label>
+        <span id="depth-val" class="font-mono-tech font-semibold text-sky-400 bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-500/30">k = 6</span>
+      </div>
+      <input id="depth-slider" type="range" min="1" max="10" step="1" value="6" class="w-full" />
+      <div class="flex justify-between text-[10px] font-mono-tech text-slate-400">
+        <span>1 (2 cells)</span>
+        <span>6 (64)</span>
+        <span>8 (½ diam)</span>
+        <span>10 (1024)</span>
+      </div>
+    </div>
+
+    <!-- Parameter t Scrub & Playback -->
+    <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+      <div class="flex items-center justify-between text-xs">
+        <label for="t-slider" class="font-medium text-slate-200">Curve Parameter t ∈ [0, 1]</label>
+        <div class="flex items-center gap-1.5">
+          <button id="play-btn" class="px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-[11px] transition flex items-center gap-1 shadow-md shadow-sky-500/20">
+            <span id="play-icon">▶</span>
+            <span id="play-text">Play</span>
+          </button>
+        </div>
+      </div>
+      <input id="t-slider" type="range" min="0" max="1" step="0.0005" value="1" class="w-full" />
+      <div class="flex items-center justify-between text-[11px] text-slate-400">
+        <span>Speed</span>
+        <div class="flex gap-1 font-mono-tech">
+          <button data-speed="0.08" class="speed-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-[10px]">0.5x</button>
+          <button data-speed="0.18" class="speed-btn px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px]">1x</button>
+          <button data-speed="0.45" class="speed-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-[10px]">2.5x</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preset Root Tetrahedron Geometry -->
+    <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+      <label class="block text-xs font-medium text-slate-200">Root Tetrahedron T = [x₁, x₂, x₃, x₄]</label>
+      <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+        <button data-preset="regular" class="preset-btn py-1.5 px-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 font-medium transition text-center">
+          Regular
+        </button>
+        <button data-preset="orthoscheme" class="preset-btn py-1.5 px-2 rounded-xl bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-700/80 font-medium transition text-center">
+          Orthoscheme
+        </button>
+        <button data-preset="stretched" class="preset-btn py-1.5 px-2 rounded-xl bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-700/80 font-medium transition text-center">
+          Stretched
+        </button>
+      </div>
+      <p id="preset-desc" class="text-[11px] text-slate-400 leading-snug">
+        Equilateral 3-simplex in ℝ³; tagged edge [x₁, x₂] along base.
+      </p>
+    </div>
+
+    <!-- Colormap Selector -->
+    <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-medium text-slate-200">Parameter Colormap</span>
+        <select id="colormap-select" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-mono-tech text-slate-200 focus:outline-none focus:border-sky-400">
+          <option value="viridis">Viridis (Perceptual)</option>
+          <option value="plasma">Plasma (Thermal)</option>
+          <option value="spectral">Spectral (Rainbow)</option>
+          <option value="turbo">Turbo (High-Contrast)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Layer Visibility Toggles -->
+    <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+      <span class="block text-xs font-medium text-slate-200 mb-1">Scene Layers</span>
+      <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+        <label class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+          <input id="chk-curve" type="checkbox" checked class="accent-sky-400 rounded" />
+          <span>SFC Curve γ(t)</span>
+        </label>
+        <label class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+          <input id="chk-active-cell" type="checkbox" checked class="accent-sky-400 rounded" />
+          <span>Active Cell T_w</span>
+        </label>
+        <label class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+          <input id="chk-all-cells" type="checkbox" checked class="accent-sky-400 rounded" />
+          <span>All 2ᵏ Cells</span>
+        </label>
+        <label class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+          <input id="chk-root" type="checkbox" checked class="accent-sky-400 rounded" />
+          <span>Root Simplex T</span>
+        </label>
+        <label class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700 col-span-2">
+          <input id="chk-labels" type="checkbox" checked class="accent-sky-400 rounded" />
+          <span>Vertex & Traversal Port Labels (x₁..x₄, m)</span>
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    /**
+     * ============================================================================
+     * 3D SIERPIŃSKI SPACE-FILLING CURVE — TETRAHEDRAL TAGGED-EDGE BISECTION
+     * ============================================================================
+     * Exact mathematical implementation based on:
+     *   T = [x_1, x_2, x_3, x_4], tagged edge e(T) = [x_1, x_2], midpoint m = (x_1 + x_2)/2
+     *   T_0 = [x_1, x_3, x_4, m]  (tagged edge [x_1, x_3], traversal port x_3)
+     *   T_1 = [x_3, x_2, x_4, m]  (tagged edge [x_3, x_2], traversal port x_3)
+     *
+     * Barycentric transition matrices A_0 and A_1 (row-stochastic 4x4):
+     *   A_0 = [[1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1/2, 1/2, 0, 0]]
+     *   A_1 = [[0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1], [1/2, 1/2, 0, 0]]
+     *
+     * For a binary word w = (w_1, ..., w_k) in {0, 1}^k (left-to-right traversal order):
+     *   M_w = A_{w_k} ... A_{w_1}
+     *   Vertices of T_w are rows of M_w * [x_1; x_2; x_3; x_4].
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. BARYCENTRIC TRANSITION MATRICES & MATHEMATICAL KERNEL
+    // ----------------------------------------------------------------------------
+    const A0 = [
+      [1.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 1.0, 0.0],
+      [0.0, 0.0, 0.0, 1.0],
+      [0.5, 0.5, 0.0, 0.0]
+    ];
+
+    const A1 = [
+      [0.0, 0.0, 1.0, 0.0],
+      [0.0, 1.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 1.0],
+      [0.5, 0.5, 0.0, 0.0]
+    ];
+
+    /**
+     * Multiply two 4x4 matrices C = A * B
+     */
+    function matMul4(A, B) {
+      const C = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      for (let i = 0; i < 4; i++) {
+        for (let k = 0; k < 4; k++) {
+          const aik = A[i][k];
+          if (aik === 0) continue;
+          for (let j = 0; j < 4; j++) {
+            C[i][j] += aik * B[k][j];
+          }
+        }
+      }
+      return C;
+    }
+
+    /**
+     * Apply 4x4 barycentric matrix M to root vertices X = [x1, x2, x3, x4] (each THREE.Vector3)
+     * Returns [v1, v2, v3, v4] where v1..v2 is the tagged edge and v3 is the pivot/port.
+     */
+    function applyBarycentricMatrix(M, rootVerts) {
+      const out = [];
+      for (let r = 0; r < 4; r++) {
+        const v = new THREE.Vector3(0, 0, 0);
+        for (let c = 0; c < 4; c++) {
+          const w = M[r][c];
+          if (w !== 0) {
+            v.addScaledVector(rootVerts[c], w);
+          }
+        }
+        out.push(v);
+      }
+      return out;
+    }
+
+    /**
+     * Compute Euclidean diameter of a 4-vertex tetrahedron
+     */
+    function computeDiameter(verts) {
+      let maxD = 0;
+      for (let i = 0; i < 4; i++) {
+        for (let j = i + 1; j < 4; j++) {
+          const d = verts[i].distanceTo(verts[j]);
+          if (d > maxD) maxD = d;
+        }
+      }
+      return maxD;
+    }
+
+    /**
+     * Preset root tetrahedra T = [x_1, x_2, x_3, x_4]
+     * Centered around origin with comparable visual scale.
+     */
+    const TETRA_PRESETS = {
+      regular: {
+        name: "Regular Tetrahedron",
+        desc: "Equilateral 3-simplex in ℝ³; tagged edge [x₁, x₂] along base.",
+        vertices: () => {
+          // Regular tetrahedron centered at origin, scaled cleanly
+          const s = 1.45;
+          const x1 = new THREE.Vector3(-1, -0.57735, -0.40825).multiplyScalar(s);
+          const x2 = new THREE.Vector3( 1, -0.57735, -0.40825).multiplyScalar(s);
+          const x3 = new THREE.Vector3( 0,  1.15470, -0.40825).multiplyScalar(s);
+          const x4 = new THREE.Vector3( 0,  0.00000,  1.22474).multiplyScalar(s);
+          return [x1, x2, x3, x4];
+        }
+      },
+      orthoscheme: {
+        name: "Orthoscheme (Kuhn Simplex)",
+        desc: "Right-angled path tetrahedron (x₂-x₁ ⊥ x₃-x₂ ⊥ x₄-x₃) used in Kuhn triangulations.",
+        vertices: () => {
+          // Canonical orthoscheme in [0, 2.4]^3 shifted to center
+          const c = new THREE.Vector3(-1.2, -1.2, -1.2);
+          const x1 = new THREE.Vector3(0.0, 0.0, 0.0).add(c);
+          const x2 = new THREE.Vector3(2.4, 0.0, 0.0).add(c);
+          const x3 = new THREE.Vector3(2.4, 2.4, 0.0).add(c);
+          const x4 = new THREE.Vector3(2.4, 2.4, 2.4).add(c);
+          return [x1, x2, x3, x4];
+        }
+      },
+      stretched: {
+        name: "Stretched / Sliver Simplex",
+        desc: "Anisotropic simplex demonstrating convergence diam(T_w) → 0 despite poor cell aspect ratio (Bader).",
+        vertices: () => {
+          const x1 = new THREE.Vector3(-2.1, -0.55, -0.45);
+          const x2 = new THREE.Vector3( 2.1, -0.45,  0.35);
+          const x3 = new THREE.Vector3(-0.3,  1.15, -0.50);
+          const x4 = new THREE.Vector3( 0.4, -0.15,  1.25);
+          return [x1, x2, x3, x4];
+        }
+      }
+    };
+
+    // ----------------------------------------------------------------------------
+    // 2. COLORMAPS FOR PARAMETER t IN [0, 1]
+    // ----------------------------------------------------------------------------
+    const COLORMAP_STOPS = {
+      viridis: [
+        [0.00, [0.267, 0.005, 0.329]],
+        [0.25, [0.230, 0.322, 0.545]],
+        [0.50, [0.128, 0.567, 0.551]],
+        [0.75, [0.369, 0.789, 0.383]],
+        [1.00, [0.993, 0.906, 0.144]]
+      ],
+      plasma: [
+        [0.00, [0.050, 0.030, 0.528]],
+        [0.25, [0.494, 0.012, 0.658]],
+        [0.50, [0.798, 0.280, 0.470]],
+        [0.75, [0.973, 0.580, 0.254]],
+        [1.00, [0.940, 0.975, 0.131]]
+      ],
+      spectral: [
+        [0.00, [0.369, 0.310, 0.635]],
+        [0.25, [0.200, 0.627, 0.737]],
+        [0.50, [0.671, 0.867, 0.643]],
+        [0.75, [0.992, 0.682, 0.380]],
+        [1.00, [0.835, 0.243, 0.310]]
+      ],
+      turbo: [
+        [0.00, [0.190, 0.072, 0.232]],
+        [0.25, [0.158, 0.735, 0.922]],
+        [0.50, [0.635, 0.988, 0.235]],
+        [0.75, [0.984, 0.502, 0.133]],
+        [1.00, [0.478, 0.016, 0.012]]
+      ]
+    };
+
+    const GRADIENT_CSS = {
+      viridis: "linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725)",
+      plasma:  "linear-gradient(90deg, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921)",
+      spectral:"linear-gradient(90deg, #5e4fa2, #3288bd, #abdda4, #fdae61, #d53e4f)",
+      turbo:   "linear-gradient(90deg, #30123b, #28bbec, #a2fc3c, #fb8022, #7a0403)"
+    };
+
+    function sampleColormap(t, mapName, targetColor) {
+      const stops = COLORMAP_STOPS[mapName] || COLORMAP_STOPS.viridis;
+      const clamped = Math.max(0, Math.min(1, t));
+      for (let i = 0; i < stops.length - 1; i++) {
+        const [t0, c0] = stops[i];
+        const [t1, c1] = stops[i + 1];
+        if (clamped >= t0 && clamped <= t1) {
+          const u = (clamped - t0) / (t1 - t0);
+          targetColor.setRGB(
+            c0[0] + u * (c1[0] - c0[0]),
+            c0[1] + u * (c1[1] - c0[1]),
+            c0[2] + u * (c1[2] - c0[2])
+          );
+          return targetColor;
+        }
+      }
+      const last = stops[stops.length - 1][1];
+      return targetColor.setRGB(last[0], last[1], last[2]);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. APPLICATION STATE & RECURSIVE SUBDIVISION ENGINE
+    // ----------------------------------------------------------------------------
+    const state = {
+      depth: 6,
+      t: 1.0,
+      playing: false,
+      playSpeed: 0.18,
+      preset: 'regular',
+      colormap: 'viridis',
+      showCurve: true,
+      showActiveCell: true,
+      showAllCells: true,
+      showRoot: true,
+      showLabels: true,
+      // Computed geometry cache
+      rootVerts: [],
+      rootDiam: 1,
+      cells: [],          // Array of 2^k objects: { word: string, verts: [v1,v2,v3,v4], centroid: Vector3 }
+      curvePoints: [],    // Continuous polyline vertices connecting tagged edges & traversal ports
+      curvePointT: []     // Parameter t_i in [0, 1] associated with each curve vertex
+    };
+
+    /**
+     * Recursively subdivides root tetrahedron up to depth k using exact barycentric
+     * transition matrices A_0 and A_1, producing 2^k ordered child cells in traversal order.
+     *
+     * Traversal order & continuity guarantee:
+     *   At depth k, cell i (0 <= i < 2^k) has vertices [v1, v2, v3, v4] with tagged edge [v1, v2].
+     *   - Cell 0 starts at v1 = x_1 (t = 0).
+     *   - For every left/right sibling pair T_{w0} = [v1, v3, v4, m] and T_{w1} = [v3, v2, v4, m]:
+     *       T_{w0}'s tagged edge ends at v3, and T_{w1}'s tagged edge starts at v3!
+     *     This holds recursively at every dyadic split: the end vertex v2 of cell i equals
+     *     the start vertex v1 of cell i+1 (the shared traversal port x_3 of their lowest common ancestor).
+     *   - Cell 2^k - 1 ends at v2 = x_2 (t = 1).
+     *
+     * Therefore, traversing the tagged edges [v1^(0), v2^(0)=v1^(1), v2^(1)=v1^(2), ..., v2^(2^k - 1)]
+     * (and optionally passing through cell centroids / edge midpoints for geometric interior detail)
+     * yields an exact continuous piecewise-linear curve from x_1 to x_2!
+     */
+    function rebuildSubdivision() {
+      state.rootVerts = TETRA_PRESETS[state.preset].vertices();
+      state.rootDiam = computeDiameter(state.rootVerts);
+
+      const k = state.depth;
+      const cells = [];
+
+      // Identity 4x4 matrix
+      const I4 = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+      ];
+
+      // Depth-first traversal in lexicographical binary order w in {0, 1}^k
+      function traverse(level, M, wordStr) {
+        if (level === k) {
+          const verts = applyBarycentricMatrix(M, state.rootVerts);
+          const centroid = new THREE.Vector3()
+            .add(verts[0])
+            .add(verts[1])
+            .add(verts[2])
+            .add(verts[3])
+            .multiplyScalar(0.25);
+          cells.push({
+            word: wordStr,
+            verts,
+            centroid
+          });
+          return;
+        }
+        // Left child: M_next = A_0 * M
+        traverse(level + 1, matMul4(A0, M), wordStr + "0");
+        // Right child: M_next = A_1 * M
+        traverse(level + 1, matMul4(A1, M), wordStr + "1");
+      }
+
+      traverse(0, I4, "");
+      state.cells = cells;
+
+      // Build continuous curve polyline connecting tagged edges [v1, v2] through shared ports v3
+      // Including each cell's centroid as an interior sample point inside T_w while preserving
+      // exact arrival/departure at the tagged-edge endpoints v1 and v2 (which meet at x_3 ports).
+      const numCells = cells.length;
+      const pts = [];
+      const ts = [];
+
+      for (let i = 0; i < numCells; i++) {
+        const c = cells[i];
+        const tStart = i / numCells;
+        const tMid = (i + 0.5) / numCells;
+        const tEnd = (i + 1) / numCells;
+
+        if (i === 0) {
+          pts.push(c.verts[0].clone()); // Starts strictly at x_1
+          ts.push(tStart);
+        }
+        // Pass through cell interior centroid (guaranteed inside convex T_w)
+        pts.push(c.centroid.clone());
+        ts.push(tMid);
+
+        // Arrive at tagged-edge exit vertex v2 (which equals next cell's v1 = shared x_3 port, or x_2 at end)
+        pts.push(c.verts[1].clone());
+        ts.push(tEnd);
+      }
+
+      state.curvePoints = pts;
+      state.curvePointT = ts;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. THREE.JS SCENE, CAMERA, RENDERER & CUSTOM ORBIT/PAN/ZOOM CONTROLS
+    // ----------------------------------------------------------------------------
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07090e);
+    scene.fog = new THREE.FogExp2(0x07090e, 0.065);
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.05, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // Subtle ambient & directional lighting for translucent faces and port spheres
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(ambientLight);
+    const dirLight1 = new THREE.DirectionalLight(0xe0f2fe, 0.85);
+    dirLight1.position.set(5, 8, 6);
+    scene.add(dirLight1);
+    const dirLight2 = new THREE.DirectionalLight(0x818cf8, 0.45);
+    dirLight2.position.set(-6, -4, -5);
+    scene.add(dirLight2);
+
+    // Subtle spatial reference grid beneath the tetrahedron
+    const gridHelper = new THREE.GridHelper(6, 12, 0x1e293b, 0x0f172a);
+    gridHelper.position.y = -1.35;
+    scene.add(gridHelper);
+
+    // Scene Groups
+    const rootGroup = new THREE.Group();
+    const allCellsGroup = new THREE.Group();
+    const curveGroup = new THREE.Group();
+    const activeCellGroup = new THREE.Group();
+    scene.add(rootGroup, allCellsGroup, curveGroup, activeCellGroup);
+
+    // Camera Orbit State
+    const camState = {
+      target: new THREE.Vector3(0, 0, 0),
+      spherical: new THREE.Spherical(5.6, Math.PI * 0.38, Math.PI * 0.24),
+      isDragging: false,
+      dragMode: 'orbit', // 'orbit' or 'pan'
+      prevX: 0,
+      prevY: 0,
+      pinchDist: 0
+    };
+
+    function updateCameraTransform() {
+      camState.spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, camState.spherical.phi));
+      camState.spherical.radius = Math.max(1.5, Math.min(20, camState.spherical.radius));
+      const offset = new THREE.Vector3().setFromSpherical(camState.spherical);
+      camera.position.copy(camState.target).add(offset);
+      camera.lookAt(camState.target);
+    }
+
+    function resetCamera() {
+      camState.target.set(0, 0, 0);
+      camState.spherical.set(5.6, Math.PI * 0.38, Math.PI * 0.24);
+      updateCameraTransform();
+    }
+    resetCamera();
+
+    // Pointer & Touch Orbit/Pan/Zoom Handlers
+    const domElem = renderer.domElement;
+    domElem.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    domElem.addEventListener('mousedown', (e) => {
+      camState.isDragging = true;
+      camState.dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'orbit';
+      camState.prevX = e.clientX;
+      camState.prevY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!camState.isDragging) return;
+      const dx = e.clientX - camState.prevX;
+      const dy = e.clientY - camState.prevY;
+      camState.prevX = e.clientX;
+      camState.prevY = e.clientY;
+
+      if (camState.dragMode === 'orbit') {
+        camState.spherical.theta -= dx * 0.0065;
+        camState.spherical.phi -= dy * 0.0065;
+      } else {
+        const panScale = camState.spherical.radius * 0.0012;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        camState.target.addScaledVector(right, -dx * panScale);
+        camState.target.addScaledVector(up, dy * panScale);
+      }
+      updateCameraTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      camState.isDragging = false;
+    });
+
+    domElem.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camState.spherical.radius *= (1 + Math.sign(e.deltaY) * 0.08);
+      updateCameraTransform();
+    }, { passive: false });
+
+    // Touch Events for Mobile/Tablet
+    domElem.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        camState.isDragging = true;
+        camState.dragMode = 'orbit';
+        camState.prevX = e.touches[0].clientX;
+        camState.prevY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        camState.isDragging = true;
+        camState.dragMode = 'pinch';
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        camState.pinchDist = Math.hypot(dx, dy);
+        camState.prevX = (e.touches[0].clientX + e.touches[1].clientX) * 0.5;
+        camState.prevY = (e.touches[0].clientY + e.touches[1].clientY) * 0.5;
+      }
+    }, { passive: false });
+
+    domElem.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!camState.isDragging) return;
+      if (e.touches.length === 1 && camState.dragMode === 'orbit') {
+        const dx = e.touches[0].clientX - camState.prevX;
+        const dy = e.touches[0].clientY - camState.prevY;
+        camState.prevX = e.touches[0].clientX;
+        camState.prevY = e.touches[0].clientY;
+        camState.spherical.theta -= dx * 0.0075;
+        camState.spherical.phi -= dy * 0.0075;
+        updateCameraTransform();
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        if (camState.pinchDist > 0) {
+          camState.spherical.radius *= (camState.pinchDist / dist);
+        }
+        camState.pinchDist = dist;
+
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) * 0.5;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) * 0.5;
+        const panScale = camState.spherical.radius * 0.0014;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        camState.target.addScaledVector(right, -(midX - camState.prevX) * panScale);
+        camState.target.addScaledVector(up, (midY - camState.prevY) * panScale);
+        camState.prevX = midX;
+        camState.prevY = midY;
+        updateCameraTransform();
+      }
+    }, { passive: false });
+
+    domElem.addEventListener('touchend', () => {
+      camState.isDragging = false;
+      camState.pinchDist = 0;
+    });
+
+    // ----------------------------------------------------------------------------
+    // 5. 3D MESH CONSTRUCTION & SYNCHRONIZATION
+    // ----------------------------------------------------------------------------
+    function clearGroup(group) {
+      while (group.children.length > 0) {
+        const child = group.children[0];
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+        group.remove(child);
+      }
+    }
+
+    // Persistent dynamic objects for curve & active cell
+    let curveLine = null;
+    let curveFaintLine = null;
+    let cursorSphere = null;
+    let activeCellMesh = null;
+    let activeCellEdges = null;
+    let activeTaggedEdgeLine = null;
+    let activePortSphere = null;
+
+    const TETRA_EDGE_PAIRS = [
+      [0, 1], [0, 2], [0, 3],
+      [1, 2], [1, 3], [2, 3]
+    ];
+
+    const TETRA_FACE_TRIS = [
+      [0, 1, 2],
+      [0, 1, 3],
+      [0, 2, 3],
+      [1, 2, 3]
+    ];
+
+    /**
+     * Rebuilds static geometry for the current depth k and root preset:
+     *   1. Root tetrahedron wireframe + highlighted root tagged edge [x1, x2] + vertex markers
+     *   2. All 2^k subdivided child tetrahedra wireframes (batched into a single LineSegments draw call)
+     *   3. Full space-filling curve BufferGeometry with vertex colors along t in [0, 1]
+     */
+    function rebuildSceneGeometry() {
+      clearGroup(rootGroup);
+      clearGroup(allCellsGroup);
+      clearGroup(curveGroup);
+      clearGroup(activeCellGroup);
+
+      const [x1, x2, x3, x4] = state.rootVerts;
+      const m = new THREE.Vector3().addVectors(x1, x2).multiplyScalar(0.5);
+
+      // --- A. Root Tetrahedron ---
+      const rootEdgePositions = [];
+      for (const [i, j] of TETRA_EDGE_PAIRS) {
+        if (i === 0 && j === 1) continue; // Draw tagged edge [x1, x2] separately
+        rootEdgePositions.push(
+          state.rootVerts[i].x, state.rootVerts[i].y, state.rootVerts[i].z,
+          state.rootVerts[j].x, state.rootVerts[j].y, state.rootVerts[j].z
+        );
+      }
+      const rootEdgeGeom = new THREE.BufferGeometry();
+      rootEdgeGeom.setAttribute('position', new THREE.Float32BufferAttribute(rootEdgePositions, 3));
+      const rootEdgeMat = new THREE.LineBasicMaterial({
+        color: 0x64748b,
+        transparent: true,
+        opacity: 0.55
+      });
+      rootGroup.add(new THREE.LineSegments(rootEdgeGeom, rootEdgeMat));
+
+      // Root Tagged Edge [x1, x2]
+      const taggedGeom = new THREE.BufferGeometry().setFromPoints([x1, x2]);
+      const taggedMat = new THREE.LineBasicMaterial({ color: 0xf59e0b });
+      rootGroup.add(new THREE.Line(taggedGeom, taggedMat));
+
+      // Root Vertex Spheres (x1, x2, x3, x4, m)
+      const sphereGeom = new THREE.SphereGeometry(0.042, 16, 16);
+      const vertexSpecs = [
+        { pos: x1, color: 0xfb7185 }, // rose-400
+        { pos: x2, color: 0xfbbf24 }, // amber-400
+        { pos: x3, color: 0x34d399 }, // emerald-400
+        { pos: x4, color: 0x38bdf8 }, // sky-400
+        { pos: m,  color: 0xc084fc, scale: 0.82 } // purple-400
+      ];
+      for (const spec of vertexSpecs) {
+        const mesh = new THREE.Mesh(sphereGeom, new THREE.MeshBasicMaterial({ color: spec.color }));
+        mesh.position.copy(spec.pos);
+        if (spec.scale) mesh.scale.setScalar(spec.scale);
+        rootGroup.add(mesh);
+      }
+
+      // --- B. All 2^k Subdivided Cells Wireframe (Batched LineSegments) ---
+      const numCells = state.cells.length;
+      const allPos = new Float32Array(numCells * 6 * 2 * 3);
+      const allCol = new Float32Array(numCells * 6 * 2 * 3);
+      const tmpColor = new THREE.Color();
+      let ptr = 0;
+
+      for (let cIdx = 0; cIdx < numCells; cIdx++) {
+        const cell = state.cells[cIdx];
+        const tCell = (cIdx + 0.5) / numCells;
+        sampleColormap(tCell, state.colormap, tmpColor);
+
+        for (const [i, j] of TETRA_EDGE_PAIRS) {
+          const vi = cell.verts[i];
+          const vj = cell.verts[j];
+          allPos[ptr] = vi.x; allPos[ptr + 1] = vi.y; allPos[ptr + 2] = vi.z;
+          allCol[ptr] = tmpColor.r; allCol[ptr + 1] = tmpColor.g; allCol[ptr + 2] = tmpColor.b;
+          ptr += 3;
+          allPos[ptr] = vj.x; allPos[ptr + 1] = vj.y; allPos[ptr + 2] = vj.z;
+          allCol[ptr] = tmpColor.r; allCol[ptr + 1] = tmpColor.g; allCol[ptr + 2] = tmpColor.b;
+          ptr += 3;
+        }
+      }
+
+      const allCellsGeom = new THREE.BufferGeometry();
+      allCellsGeom.setAttribute('position', new THREE.BufferAttribute(allPos, 3));
+      allCellsGeom.setAttribute('color', new THREE.BufferAttribute(allCol, 3));
+      const cellOpacity = Math.max(0.06, Math.min(0.32, 0.55 / Math.sqrt(numCells)));
+      const allCellsMat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: cellOpacity,
+        depthWrite: false
+      });
+      allCellsGroup.add(new THREE.LineSegments(allCellsGeom, allCellsMat));
+
+      // --- C. Space-Filling Curve Polyline (Active Drawn + Ghost Full Path) ---
+      const numPts = state.curvePoints.length;
+      const curvePos = new Float32Array(numPts * 3);
+      const curveCol = new Float32Array(numPts * 3);
+
+      for (let i = 0; i < numPts; i++) {
+        const p = state.curvePoints[i];
+        curvePos[i * 3] = p.x;
+        curvePos[i * 3 + 1] = p.y;
+        curvePos[i * 3 + 2] = p.z;
+
+        sampleColormap(state.curvePointT[i], state.colormap, tmpColor);
+        curveCol[i * 3] = tmpColor.r;
+        curveCol[i * 3 + 1] = tmpColor.g;
+        curveCol[i * 3 + 2] = tmpColor.b;
+      }
+
+      // Faint preview of full path when t < 1
+      const ghostGeom = new THREE.BufferGeometry();
+      ghostGeom.setAttribute('position', new THREE.BufferAttribute(curvePos.slice(), 3));
+      const ghostMat = new THREE.LineBasicMaterial({
+        color: 0x334155,
+        transparent: true,
+        opacity: 0.25
+      });
+      curveFaintLine = new THREE.Line(ghostGeom, ghostMat);
+      curveGroup.add(curveFaintLine);
+
+      // Active colored curve up to parameter t (with interpolated tip vertex)
+      const activeCurvePos = new Float32Array((numPts + 1) * 3);
+      const activeCurveCol = new Float32Array((numPts + 1) * 3);
+      activeCurvePos.set(curvePos);
+      activeCurveCol.set(curveCol);
+
+      const activeCurveGeom = new THREE.BufferGeometry();
+      activeCurveGeom.setAttribute('position', new THREE.BufferAttribute(activeCurvePos, 3));
+      activeCurveGeom.setAttribute('color', new THREE.BufferAttribute(activeCurveCol, 3));
+      const activeCurveMat = new THREE.LineBasicMaterial({
+        vertexColors: true
+      });
+      curveLine = new THREE.Line(activeCurveGeom, activeCurveMat);
+      curveGroup.add(curveLine);
+
+      // --- D. Active Cell T_w Highlight, Tagged Edge [v1, v2], Port v3, and gamma(t) Cursor ---
+      const activeFacesGeom = new THREE.BufferGeometry();
+      activeFacesGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12 * 3), 3));
+      const activeFacesMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      activeCellMesh = new THREE.Mesh(activeFacesGeom, activeFacesMat);
+      activeCellGroup.add(activeCellMesh);
+
+      const activeEdgesGeom = new THREE.BufferGeometry();
+      activeEdgesGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12 * 3), 3));
+      const activeEdgesMat = new THREE.LineBasicMaterial({
+        color: 0x7dd3fc,
+        transparent: true,
+        opacity: 0.95
+      });
+      activeCellEdges = new THREE.LineSegments(activeEdgesGeom, activeEdgesMat);
+      activeCellGroup.add(activeCellEdges);
+
+      // Active Cell's Tagged Edge [v1, v2]
+      const activeTagGeom = new THREE.BufferGeometry();
+      activeTagGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2 * 3), 3));
+      const activeTagMat = new THREE.LineBasicMaterial({ color: 0xfbbf24 });
+      activeTaggedEdgeLine = new THREE.Line(activeTagGeom, activeTagMat);
+      activeCellGroup.add(activeTaggedEdgeLine);
+
+      // Active Cell's Pivot / Traversal Port v3 (x_3 of active cell)
+      activePortSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.048, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x10b981 })
+      );
+      activeCellGroup.add(activePortSphere);
+
+      // Current gamma(t) Cursor Sphere
+      cursorSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.056, 20, 20),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      activeCellGroup.add(cursorSphere);
+
+      updateDynamicFrame();
+    }
+
+    /**
+     * Updates parameter-dependent visuals (gamma(t), active cell T_w, HUD telemetry, 3D labels)
+     */
+    function updateDynamicFrame() {
+      const t = state.t;
+      const numCells = state.cells.length;
+      const cellIdx = Math.min(numCells - 1, Math.floor(t * numCells));
+      const activeCell = state.cells[cellIdx];
+
+      // 1. Update partial curve draw range + smooth tip interpolation
+      const numPts = state.curvePoints.length;
+      const posAttr = curveLine.geometry.attributes.position;
+      const colAttr = curveLine.geometry.attributes.color;
+
+      // Reset base vertices in case previous frame wrote an interpolated tip
+      for (let i = 0; i < numPts; i++) {
+        const p = state.curvePoints[i];
+        posAttr.setXYZ(i, p.x, p.y, p.z);
+      }
+
+      const scaledIdx = t * (numPts - 1);
+      const baseIdx = Math.floor(scaledIdx);
+      const frac = scaledIdx - baseIdx;
+      const gammaPos = new THREE.Vector3();
+
+      if (baseIdx >= numPts - 1) {
+        gammaPos.copy(state.curvePoints[numPts - 1]);
+        curveLine.geometry.setDrawRange(0, numPts);
+      } else {
+        const p0 = state.curvePoints[baseIdx];
+        const p1 = state.curvePoints[baseIdx + 1];
+        gammaPos.lerpVectors(p0, p1, frac);
+
+        const tipSlot = baseIdx + 1;
+        posAttr.setXYZ(tipSlot, gammaPos.x, gammaPos.y, gammaPos.z);
+        const tipCol = sampleColormap(t, state.colormap, new THREE.Color());
+        colAttr.setXYZ(tipSlot, tipCol.r, tipCol.g, tipCol.b);
+        curveLine.geometry.setDrawRange(0, tipSlot + 1);
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+
+      // 2. Update cursor sphere at gamma(t)
+      cursorSphere.position.copy(gammaPos);
+      const cursorCol = sampleColormap(t, state.colormap, new THREE.Color());
+      cursorSphere.material.color.copy(cursorCol);
+
+      // 3. Update active cell T_w geometry
+      const [v1, v2, v3, v4] = activeCell.verts;
+      const facePosAttr = activeCellMesh.geometry.attributes.position;
+      let fPtr = 0;
+      for (const [a, b, c] of TETRA_FACE_TRIS) {
+        const va = activeCell.verts[a];
+        const vb = activeCell.verts[b];
+        const vc = activeCell.verts[c];
+        facePosAttr.setXYZ(fPtr++, va.x, va.y, va.z);
+        facePosAttr.setXYZ(fPtr++, vb.x, vb.y, vb.z);
+        facePosAttr.setXYZ(fPtr++, vc.x, vc.y, vc.z);
+      }
+      facePosAttr.needsUpdate = true;
+      activeCellMesh.material.color.copy(cursorCol);
+
+      const edgePosAttr = activeCellEdges.geometry.attributes.position;
+      let ePtr = 0;
+      for (const [i, j] of TETRA_EDGE_PAIRS) {
+        const vi = activeCell.verts[i];
+        const vj = activeCell.verts[j];
+        edgePosAttr.setXYZ(ePtr++, vi.x, vi.y, vi.z);
+        edgePosAttr.setXYZ(ePtr++, vj.x, vj.y, vj.z);
+      }
+      edgePosAttr.needsUpdate = true;
+
+      // Active tagged edge [v1, v2] and port v3
+      const tagPosAttr = activeTaggedEdgeLine.geometry.attributes.position;
+      tagPosAttr.setXYZ(0, v1.x, v1.y, v1.z);
+      tagPosAttr.setXYZ(1, v2.x, v2.y, v2.z);
+      tagPosAttr.needsUpdate = true;
+
+      activePortSphere.position.copy(v3);
+
+      // 4. Visibility Flags
+      curveGroup.visible = state.showCurve;
+      activeCellGroup.visible = state.showActiveCell;
+      allCellsGroup.visible = state.showAllCells;
+      rootGroup.visible = state.showRoot;
+
+      // 5. Update Mathematical Telemetry HUD
+      const k = state.depth;
+      const powFloor = Math.floor(k / 8);
+      const boundFactor = Math.pow(2, -powFloor);
+      const boundFrac = powFloor === 0 ? "1" : `1/${Math.pow(2, powFloor)}`;
+
+      document.getElementById('hud-cell-count').textContent = `${numCells.toLocaleString()} (2^${k})`;
+      document.getElementById('hud-diam-bound').textContent = `${boundFrac} (${boundFactor.toFixed(3)}) · diam(T)`;
+      document.getElementById('hud-t-val').textContent = `t = ${t.toFixed(4)}`;
+      document.getElementById('hud-word').textContent = `w = ${activeCell.word}`;
+
+      const fmtVec = (v) => `(${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`;
+      document.getElementById('hud-cell-verts').innerHTML = `
+        <div class="grid grid-cols-2 gap-x-2">
+          <div><span class="text-amber-300">v₁:</span> ${fmtVec(v1)}</div>
+          <div><span class="text-amber-300">v₂:</span> ${fmtVec(v2)}</div>
+          <div><span class="text-emerald-300">v₃:</span> ${fmtVec(v3)}</div>
+          <div><span class="text-sky-300">v₄:</span> ${fmtVec(v4)}</div>
+        </div>
+      `;
+    }
+
+    /**
+     * Projects 3D anchors to 2D screen coordinates for crisp HTML vertex labels
+     */
+    const labelElems = {
+      x1: document.getElementById('lbl-x1'),
+      x2: document.getElementById('lbl-x2'),
+      x3: document.getElementById('lbl-x3'),
+      x4: document.getElementById('lbl-x4'),
+      m:  document.getElementById('lbl-m'),
+      port: document.getElementById('lbl-port')
+    };
+    const projVec = new THREE.Vector3();
+
+    function projectLabel(worldPos, elem, visible, offsetY = -14) {
+      if (!visible || !state.showLabels) {
+        elem.style.opacity = '0';
+        return;
+      }
+      projVec.copy(worldPos).project(camera);
+      if (projVec.z > 1) {
+        elem.style.opacity = '0';
+        return;
+      }
+      const x = (projVec.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-projVec.y * 0.5 + 0.5) * window.innerHeight + offsetY;
+      elem.style.left = `${x}px`;
+      elem.style.top = `${y}px`;
+      elem.style.opacity = '1';
+    }
+
+    function updateProjectedLabels() {
+      if (state.rootVerts.length < 4) return;
+      const [x1, x2, x3, x4] = state.rootVerts;
+      const m = new THREE.Vector3().addVectors(x1, x2).multiplyScalar(0.5);
+
+      projectLabel(x1, labelElems.x1, state.showRoot, 16);
+      projectLabel(x2, labelElems.x2, state.showRoot, 16);
+      projectLabel(x3, labelElems.x3, state.showRoot, -16);
+      projectLabel(x4, labelElems.x4, state.showRoot, -16);
+      projectLabel(m,  labelElems.m,  state.showRoot, 16);
+
+      if (activePortSphere) {
+        projectLabel(activePortSphere.position, labelElems.port, state.showActiveCell, -16);
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. UI EVENT LISTENERS & INTERACTION WIRING
+    // ----------------------------------------------------------------------------
+    const depthSlider = document.getElementById('depth-slider');
+    const depthVal = document.getElementById('depth-val');
+    depthSlider.addEventListener('input', (e) => {
+      state.depth = parseInt(e.target.value, 10);
+      depthVal.textContent = `k = ${state.depth}`;
+      rebuildSubdivision();
+      rebuildSceneGeometry();
+    });
+
+    const tSlider = document.getElementById('t-slider');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const playText = document.getElementById('play-text');
+
+    function setPlaying(isPlaying) {
+      state.playing = isPlaying;
+      playIcon.textContent = isPlaying ? '❚❚' : '▶';
+      playText.textContent = isPlaying ? 'Pause' : 'Play';
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (!state.playing && state.t >= 0.999) {
+        state.t = 0;
+        tSlider.value = "0";
+      }
+      setPlaying(!state.playing);
+    });
+
+    tSlider.addEventListener('input', (e) => {
+      state.t = parseFloat(e.target.value);
+      if (state.playing) setPlaying(false);
+      updateDynamicFrame();
+    });
+
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.playSpeed = parseFloat(btn.dataset.speed);
+        document.querySelectorAll('.speed-btn').forEach(b => {
+          b.className = "speed-btn px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-[10px]";
+        });
+        btn.className = "speed-btn px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px]";
+      });
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.preset = btn.dataset.preset;
+        document.getElementById('preset-desc').textContent = TETRA_PRESETS[state.preset].desc;
+        document.querySelectorAll('.preset-btn').forEach(b => {
+          b.className = "preset-btn py-1.5 px-2 rounded-xl bg-slate-800/80 text-slate-300 border border-slate-700/60 hover:bg-slate-700/80 font-medium transition text-center";
+        });
+        btn.className = "preset-btn py-1.5 px-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 font-medium transition text-center";
+
+        rebuildSubdivision();
+        rebuildSceneGeometry();
+      });
+    });
+
+    document.getElementById('colormap-select').addEventListener('change', (e) => {
+      state.colormap = e.target.value;
+      const gradBar = document.getElementById('gradient-bar');
+      if (gradBar) gradBar.style.background = GRADIENT_CSS[state.colormap];
+      rebuildSceneGeometry();
+    });
+
+    document.getElementById('chk-curve').addEventListener('change', (e) => {
+      state.showCurve = e.target.checked;
+      updateDynamicFrame();
+    });
+    document.getElementById('chk-active-cell').addEventListener('change', (e) => {
+      state.showActiveCell = e.target.checked;
+      updateDynamicFrame();
+    });
+    document.getElementById('chk-all-cells').addEventListener('change', (e) => {
+      state.showAllCells = e.target.checked;
+      updateDynamicFrame();
+    });
+    document.getElementById('chk-root').addEventListener('change', (e) => {
+      state.showRoot = e.target.checked;
+      updateDynamicFrame();
+    });
+    document.getElementById('chk-labels').addEventListener('change', (e) => {
+      state.showLabels = e.target.checked;
+      updateProjectedLabels();
+    });
+
+    document.getElementById('reset-cam-btn').addEventListener('click', resetCamera);
+
+    document.getElementById('toggle-hud-btn').addEventListener('click', () => {
+      const details = document.getElementById('hud-details');
+      details.classList.toggle('hidden');
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ----------------------------------------------------------------------------
+    // 7. ANIMATION LOOP (STARTED ON WINDOW LOAD)
+    // ----------------------------------------------------------------------------
+    let lastTime = performance.now();
+
+    function animate(now = performance.now()) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, (now - lastTime) * 0.001);
+      lastTime = now;
+
+      if (state.playing) {
+        state.t += state.playSpeed * dt;
+        if (state.t >= 1.0) {
+          state.t = 1.0;
+          setPlaying(false);
+        }
+        tSlider.value = state.t.toFixed(4);
+        updateDynamicFrame();
+      }
+
+      updateProjectedLabels();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      rebuildSubdivision();
+      rebuildSceneGeometry();
+      animate();
+    };
+  </script>
+</body>
+</html>
